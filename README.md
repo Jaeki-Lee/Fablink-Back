@@ -22,21 +22,36 @@ source venv/bin/activate  # Linux/Mac
 # venv\Scripts\activate   # Windows
 ```
 
-### 3단계: 개발 데이터베이스 설정
+### 3.단계: PostgreSQL 설치 및 설정
+Ubuntu/Debian:
+```bash
+bashsudo apt update
+sudo apt install postgresql postgresql-contrib
+sudo systemctl start postgresql
+sudo systemctl enable postgresql
+```
+
+```bash
+macOS:
+bashbrew install postgresql
+brew services start postgresql
+```
+
+### 4단계: 개발 데이터베이스 설정
 
 ```bash
 # PostgreSQL 설치 및 개발 DB 생성
 ./scripts/setup_postgresql_dev.sh
 ```
 
-### 4단계: Django 개발환경 설정
+### 5단계: Django 개발환경 설정
 
 ```bash
 # 패키지 설치, 마이그레이션, 슈퍼유저 생성
 ./scripts/setup_dev.sh
 ```
 
-### 5단계: 개발 서버 실행
+### 6단계: 개발 서버 실행
 
 ```bash
 # Django 개발 서버 시작
