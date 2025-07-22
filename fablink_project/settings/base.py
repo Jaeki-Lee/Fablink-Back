@@ -5,13 +5,13 @@ from dotenv import load_dotenv
 # 환경변수 로드
 load_dotenv()
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY', 'your-default-secret-key-here')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
@@ -34,10 +34,7 @@ THIRD_PARTY_APPS = [
 LOCAL_APPS = [
     'apps.accounts',
     'apps.core',
-    'apps.manufacturing',
-    'apps.orders',
-    'apps.notifications',
-    'apps.files',
+    'apps.manufacturing'
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -169,3 +166,4 @@ LOGGING = {
     },
 }
 
+AUTH_USER_MODEL = 'accounts.User'
