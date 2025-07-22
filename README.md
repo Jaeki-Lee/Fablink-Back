@@ -23,16 +23,16 @@ source venv/bin/activate  # Linux/Mac
 ```
 
 ### 3.단계: PostgreSQL 설치 및 설정
+#### Ubuntu/Debian:
 ```bash
-Ubuntu/Debian:
 bashsudo apt update
 sudo apt install postgresql postgresql-contrib
 sudo systemctl start postgresql
 sudo systemctl enable postgresql
 ```
 
+#### macOS:
 ```bash
-macOS:
 bashbrew install postgresql
 brew services start postgresql
 ```
