@@ -86,11 +86,7 @@ python manage.py runserver
 fablink-backend/
 ├── apps/                          # Django 앱들
 │   ├── accounts/                  # 사용자 관리
-│   ├── core/                      # 공통 기능
-│   ├── manufacturing/             # 제조 관리
-│   ├── orders/                    # 주문 관리
-│   ├── notifications/             # 알림 시스템
-│   └── files/                     # 파일 관리
+│   └── core/                      # 공통 기능
 ├── fablink_project/               # Django 프로젝트 설정
 │   ├── settings/                  # 환경별 설정
 │   │   ├── base.py               # 공통 설정
@@ -125,18 +121,55 @@ fablink-backend/
 
 #### `apps/manufacturing/`
 - 제품 디자인 및 제조 요청 관리
-- AI 디자인 분석 결과 저장
-- 제조업체 매칭 로직
 
-#### `apps/orders/`
-- 주문 및 견적 관리
-- 결제 및 정산 처리
-- 주문 상태 추적
+## 📦 앱(App) 생성 및 관리
 
-#### `apps/notifications/`
-- 실시간 알림 시스템
-- 이메일/SMS 발송
-- 알림 히스토리 관리
+### 새 Django 앱 생성
+#### 생성된 앱 구조
+```
+apps/accounts/
+├── __init__.py
+├── admin.py          # 관리자 페이지 설정
+├── apps.py           # 앱 설정
+├── models.py         # 데이터 모델
+├── views.py          # 뷰 로직
+├── tests.py          # 테스트 코드
+├── migrations/       # 마이그레이션 파일들
+└── urls.py          # URL 설정 (수동 생성 필요)
+```
+
+#### 앱 생성 메뉴얼
+```bash
+# 스크립트 실행 권한 부여
+chmod +x scripts/create_app.sh
+
+# 새 앱 생성
+./scripts/create_app.sh payments
+./scripts/create_app.sh analytics
+./scripts/create_app.sh reviews
+```
+
+#### 개발 중 일반적인 워크플로우
+```bash
+# 1. 모델 변경 후
+python manage.py makemigrations
+python manage.py migrate
+
+# 2. 서버 재시작
+python manage.py runserver
+
+# 3. 문제 발생 시 체크
+python manage.py check
+python manage.py showmigrations
+```
+
+#### 데이터베이스 리셋 (개발환경에서만!)
+```bash
+# ⚠️ 주의: 모든 데이터가 삭제됩니다!
+python manage.py flush
+python manage.py migrate
+python manage.py createsuperuser
+```
 
 ## 📚 API 문서
 
@@ -154,23 +187,6 @@ curl -X POST http://localhost:8000/api/accounts/login/ \
 curl -H "Authorization: Token your-token-here" \
   http://localhost:8000/api/manufacturing/products/
 ```
-
-### 주요 엔드포인트
-
-#### 인증 관련
-- `POST /api/accounts/login/` - 로그인
-- `POST /api/accounts/logout/` - 로그아웃
-- `POST /api/accounts/register/` - 회원가입
-
-#### 제조 관리
-- `GET /api/manufacturing/products/` - 제품 목록
-- `POST /api/manufacturing/products/` - 제품 생성
-- `GET /api/manufacturing/orders/` - 제조 주문 목록
-
-#### 주문 관리
-- `GET /api/orders/` - 주문 목록
-- `POST /api/orders/` - 주문 생성
-- `GET /api/orders/{id}/` - 주문 상세
 
 ### API 문서 확인
 
@@ -253,51 +269,6 @@ docker run -d -p 8000:8000 \
 - PostgreSQL (AWS RDS)
 - AWS S3 파일 저장소
 - SSL/HTTPS 필수
-
-## 🔍 문제해결
-
-### 자주 발생하는 문제들
-
-#### 1. PostgreSQL 연결 오류
-
-**문제**: `connection to server at "localhost" failed`
-
-**해결책**:
-```bash
-# PostgreSQL 서비스 상태 확인
-sudo systemctl status postgresql
-
-# PostgreSQL 서비스 시작
-sudo systemctl start postgresql
-
-# 데이터베이스 존재 확인
-sudo -u postgres psql -l
-```
-
-#### 2. 마이그레이션 오류
-
-**문제**: `django.db.utils.ProgrammingError`
-
-**해결책**:
-```bash
-# 마이그레이션 초기화
-python manage.py migrate --fake-initial
-
-# 또는 마이그레이션 파일 재생성
-rm apps/*/migrations/00*.py
-python manage.py makemigrations
-python manage.py migrate
-```
-
-#### 3. 패키지 설치 오류
-
-**문제**: `psycopg2` 설치 실패
-
-**해결책** (Ubuntu/Debian):
-```bash
-sudo apt install python3-dev libpq-dev
-pip install psycopg2-binary
-```
 
 #### 4. 권한 오류
 
