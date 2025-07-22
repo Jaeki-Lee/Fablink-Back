@@ -1,0 +1,7 @@
+-r base.txt
+dj-database-url==2.1.0
+django-redis==5.4.0
+django-storages[boto3]==1.14.2
+gunicorn==21.2.0
+sentry-sdk[django]==1.38.0
+whitenoise==6.6.0

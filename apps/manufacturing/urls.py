@@ -3,6 +3,9 @@ from rest_framework.routers import DefaultRouter
 
 app_name = 'manufacturing'
 
+router = DefaultRouter()
+# router.register(r'orders', ManufacturingOrderViewSet)  # 나중에 추가
+
 urlpatterns = [
-    # 추후 API 엔드포인트 추가
+    path('', include(router.urls)),
 ]
