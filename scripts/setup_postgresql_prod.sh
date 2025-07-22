@@ -71,8 +71,9 @@ CREATE DATABASE fablink_prod_db
     WITH 
     OWNER = fablink_prod_user
     ENCODING = 'UTF8'
-    LC_COLLATE = 'C'
-    LC_CTYPE = 'C'
+    TEMPLATE = template0
+    LC_COLLATE = 'C.UTF-8'
+    LC_CTYPE = 'C.UTF-8'
     TABLESPACE = pg_default
     CONNECTION LIMIT = 50;
 
