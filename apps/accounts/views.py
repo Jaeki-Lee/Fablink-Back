@@ -17,13 +17,13 @@ def login_view(request):
     
     if serializer.is_valid():
         user = serializer.validated_data['user']
-        # Django 세션에 로그인 (선택사항)
-        login(request, user)
         
         token, created = Token.objects.get_or_create(user=user)
 
         # 사용자 정보 직렬화
         user_serializer = UserSerializer(user)
+
+        logger.info(f"유저 {user.username} 로그인 성공.")
 
         return Response({
             'success': True,
@@ -32,11 +32,32 @@ def login_view(request):
             'user': user_serializer.data
         }, status=status.HTTP_200_OK)
 
+    logger.info(f"로그인 실패: {serializer.errors}")
+
     return Response({
         'success': False,
         'message': '로그인 실패',
         'errors': serializer.errors,
     }, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+def user_info_view(request):
+    """
+    현재 로그인된 사용자 정보 조회 API
+    GET /api/accounts/user/
+    """
+    if request.user.is_authenticated:
+        user_serializer = UserSerializer(request.user)
+        return Response({
+            'success': True,
+            'user': user_serializer.data
+        }, status=status.HTTP_200_OK)
+    
+    return Response({
+        'success': False,
+        'message': '로그인이 필요합니다.'
+    }, status=status.HTTP_401_UNAUTHORIZED)
 
 @api_view(['POST'])
 def logout_view(request):
