@@ -6,8 +6,6 @@ class User(AbstractUser):
         ('designer', '디자이너'),
         ('manufacturer', '공장주'),
     )
-    user_id = models.CharField(max_length=30, unique=True)
-    user_password = models.CharField(max_length=128)
     user_type = models.CharField(max_length=20, choices=USER_TYPE_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
