@@ -1,13 +1,10 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-
-app_name = 'accounts'
-
-router = DefaultRouter()
-# router.register(r'users', UserViewSet)  # 나중에 추가
+from django.urls import path
+from .views import LoginView, UserInfoView
 
 urlpatterns = [
-    path('', include(router.urls)),
-    # path('login/', LoginView.as_view(), name='login'),  # 나중에 추가
-    # path('logout/', LogoutView.as_view(), name='logout'),
+    path('login/', LoginView.as_view(), name='login'),
+    # JWT 패키지가 설치되면 아래 주석을 해제하세요
+    # from rest_framework_simplejwt.views import TokenRefreshView
+    # path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('me/', UserInfoView.as_view(), name='user_info'),
 ]

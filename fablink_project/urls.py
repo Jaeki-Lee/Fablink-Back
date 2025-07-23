@@ -5,8 +5,8 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # API 엔드포인트들 (나중에 활성화)
-    # path('api/accounts/', include('apps.accounts.urls')),
+    # API 엔드포인트들
+    path('api/auth/', include('apps.accounts.urls')),
     # path('api/manufacturing/', include('apps.manufacturing.urls')),
     # path('api/orders/', include('apps.orders.urls')),
     # path('api/notifications/', include('apps.notifications.urls')),
