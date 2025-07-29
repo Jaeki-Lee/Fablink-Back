@@ -13,7 +13,7 @@ echo "🚀 새 앱 '$APP_NAME'을 생성합니다..."
 python manage.py startapp $APP_NAME apps/$APP_NAME
 
 # URL 파일 생성
-cat > apps/$APP_NAME/urls.py << EOF
+cat > apps/$APP_NAME/j .py << EOF
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
