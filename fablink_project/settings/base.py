@@ -1,9 +1,9 @@
 import os
 from pathlib import Path
-from dotenv import load_dotenv
+from .env_loader import load_environment_variables, get_environment_type, is_production, is_development, is_local
 
 # 환경변수 로드
-load_dotenv()
+load_environment_variables()
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -69,18 +69,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'fablink_project.wsgi.application'
 
-# Database
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': os.getenv('DB_NAME', 'fablink_db'),
-#         'USER': os.getenv('DB_USER', 'fablink_user'),
-#         'PASSWORD': os.getenv('DB_PASSWORD', 'test123'),
-#         'HOST': os.getenv('DB_HOST', 'localhost'),
-#         'PORT': os.getenv('DB_PORT', '5432'),
-#     }
-# }
-
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -137,6 +125,8 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # Next.js 개발 서버
     "http://127.0.0.1:3000",
+    "http://www.dev-fablink.com",
+    "http://www.fablink.com"
 ]
 
 CORS_ALLOW_CREDENTIALS = True

@@ -12,10 +12,17 @@ def get_env_variable(var_name, default=None):
         raise ImproperlyConfigured(error_msg)
 
 
-env = get_env_variable('DJANGO_ENV', 'development')
-if 'production' in env:
-    from .production import *
-elif 'development' in env:
-    from .development import *
-else:
+# 환경 결정 (기본값: local)
+env = get_env_variable('DJANGO_ENV', 'local')
+
+print(f"🌍 Django 환경: {env}")
+
+if env == 'prod':
+    from .prod import *
+    print("📦 운영 환경 설정 로드됨")
+elif env == 'dev':
+    from .dev import *
+    print("🔧 개발 서버 환경 설정 로드됨")
+else:  # local 또는 기타
     from .local import *
+    print("💻 로컬 개발 환경 설정 로드됨")
