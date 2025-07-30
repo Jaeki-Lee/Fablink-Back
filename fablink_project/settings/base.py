@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from datetime import timedelta
 from .env_loader import load_environment_variables, get_environment_type, is_production, is_development, is_local
 
 # 환경변수 로드
@@ -27,7 +28,7 @@ DJANGO_APPS = [
 
 THIRD_PARTY_APPS = [
     'rest_framework',
-    'rest_framework.authtoken',  # Token authentication
+    'rest_framework_simplejwt',  # JWT authentication
     'corsheaders',
 ]
 
@@ -120,7 +121,7 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',

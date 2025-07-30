@@ -66,10 +66,14 @@ if command -v systemctl &> /dev/null; then
     # Linux
     POSTGRES_USER="postgres"
     PSQL_CMD="sudo -u postgres psql"
+    LOCALE_COLLATE="C.UTF-8"
+    LOCALE_CTYPE="C.UTF-8"
 else
     # macOS
     POSTGRES_USER=$(whoami)
-    PSQL_CMD="psql postgres"
+    PSQL_CMD="/opt/homebrew/bin/psql postgres"
+    LOCALE_COLLATE="en_US.UTF-8"
+    LOCALE_CTYPE="en_US.UTF-8"
 fi
 
 $PSQL_CMD << 'EOSQL'
@@ -90,8 +94,8 @@ CREATE DATABASE fablink_local_db
     OWNER = fablink_user
     ENCODING = 'UTF8'
     TEMPLATE = template0
-    LC_COLLATE = 'C.UTF-8'
-    LC_CTYPE = 'C.UTF-8'
+    LC_COLLATE = '$LOCALE_COLLATE'
+    LC_CTYPE = '$LOCALE_CTYPE'
     TABLESPACE = pg_default
     CONNECTION LIMIT = -1;
 
@@ -115,11 +119,22 @@ EOSQL
 
 # 연결 테스트
 log_info "데이터베이스 연결을 테스트합니다..."
-if PGPASSWORD=local123 psql -h localhost -U fablink_user -d fablink_local_db -c "SELECT version();" > /dev/null 2>&1; then
-    log_success "데이터베이스 연결 테스트 성공!"
+if [ "$POSTGRES_USER" = "postgres" ]; then
+    # Linux
+    if PGPASSWORD=local123 psql -h localhost -U fablink_user -d fablink_local_db -c "SELECT version();" > /dev/null 2>&1; then
+        log_success "데이터베이스 연결 테스트 성공!"
+    else
+        log_error "데이터베이스 연결 테스트 실패!"
+        exit 1
+    fi
 else
-    log_error "데이터베이스 연결 테스트 실패!"
-    exit 1
+    # macOS
+    if PGPASSWORD=local123 /opt/homebrew/bin/psql -h localhost -U fablink_user -d fablink_local_db -c "SELECT version();" > /dev/null 2>&1; then
+        log_success "데이터베이스 연결 테스트 성공!"
+    else
+        log_error "데이터베이스 연결 테스트 실패!"
+        exit 1
+    fi
 fi
 
 echo ""

@@ -29,3 +29,10 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'user_id', 'name', 'user_type', 'contact', 'address', 'created_at']
         read_only_fields = ['id', 'created_at']
+
+class TokenRefreshSerializer(serializers.Serializer):
+    refresh = serializers.CharField()
+
+    def validate(self, attrs):
+        if not attrs.get('refresh'):
+            raise serializers.ValidationError('Refresh 토큰이 필요합니다.')

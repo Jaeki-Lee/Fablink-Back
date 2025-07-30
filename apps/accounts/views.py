@@ -2,7 +2,8 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.authtoken.models import Token
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import authenticate
 from .serializers import LoginSerializer, UserSerializer
 
 @api_view(['POST'])
@@ -16,13 +17,16 @@ def login_view(request):
     
     if serializer.is_valid():
         user = serializer.validated_data['user']
-        token, created = Token.objects.get_or_create(user=user)
+        refresh = RefreshToken.for_user(user)
         user_serializer = UserSerializer(user)
 
         return Response({
             'success': True,
             'message': '로그인 성공',
-            'token': token.key,
+            'tokens': {
+                'access': str(refresh.access_token),
+                'refresh': str(refresh)
+            },
             'user': user_serializer.data
         }, status=status.HTTP_200_OK)
 
@@ -53,18 +57,40 @@ def logout_view(request):
     POST /api/accounts/logout/
     """
     try:
-        request.user.auth_token.delete()
+        refresh_token = request.data.get('refresh')
+        token = RefreshToken(refresh_token)
+        token.blacklist()  # 토큰 블랙리스트에 추가
+        
         return Response({
             'success': True,
             'message': '로그아웃 성공'
         }, status=status.HTTP_200_OK)
-    except Token.DoesNotExist:
-        return Response({
-            'success': False,
-            'message': '이미 로그아웃되었습니다.'
-        }, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         return Response({
             'success': False,
             'message': f'로그아웃 실패: {str(e)}'
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def token_refresh_view(request):
+    """
+    토큰 갱신 API
+    POST /api/accounts/token/refresh/
+    """
+    try:
+        refresh_token = request.data.get('refresh')
+        token = RefreshToken(refresh_token)
+        
+        return Response({
+            'success': True,
+            'tokens': {
+                'access': str(token.access_token),
+                'refresh': str(token)
+            }
+        }, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'토큰 갱신 실패: {str(e)}'
+        }, status=status.HTTP_400_BAD_REQUEST)
