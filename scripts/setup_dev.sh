@@ -42,7 +42,7 @@ fi
 
 # .env 파일 존재 확인
 if [ ! -f ".env" ]; then
-    log_error ".env 파일이 없습니다. 먼저 ./scripts/setup_postgresql_dev.sh 를 실행하세요."
+    log_error ".env 파일이 없습니다. 먼저 ./scripts/setup_postgresql_local.sh 를 실행하세요."
     exit 1
 fi
 
