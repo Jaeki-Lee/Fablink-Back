@@ -108,21 +108,21 @@ load_environment_config() {
     case $env_type in
         local)
             ENV_FILE=".env.local"
-            DJANGO_SETTINGS="fablink_project.settings.development"
+            DJANGO_SETTINGS="fablink_project.settings.local"
             REQUIREMENTS_FILE="requirements/local.txt"
             COLLECT_STATIC=false
             RUN_TESTS=true
             ;;
         dev)
             ENV_FILE=".env.dev"
-            DJANGO_SETTINGS="fablink_project.settings.development"
+            DJANGO_SETTINGS="fablink_project.settings.dev"
             REQUIREMENTS_FILE="requirements/development.txt"
             COLLECT_STATIC=true
             RUN_TESTS=true
             ;;
         prod)
             ENV_FILE=".env.prod"
-            DJANGO_SETTINGS="fablink_project.settings.production"
+            DJANGO_SETTINGS="fablink_project.settings.prod"
             REQUIREMENTS_FILE="requirements/production.txt"
             COLLECT_STATIC=true
             RUN_TESTS=false

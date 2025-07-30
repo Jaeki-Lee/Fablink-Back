@@ -3,6 +3,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
 from django.contrib.auth import authenticate
 from .serializers import LoginSerializer, UserSerializer
 
@@ -55,42 +56,37 @@ def logout_view(request):
     """
     사용자 로그아웃 API
     POST /api/accounts/logout/
+    
+    Request Body:
+    {
+        "refresh": "your-refresh-token"
+    }
     """
     try:
         refresh_token = request.data.get('refresh')
+        if not refresh_token:
+            return Response({
+                'success': False,
+                'message': 'Refresh 토큰이 필요합니다.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 토큰 블랙리스트에 추가
         token = RefreshToken(refresh_token)
-        token.blacklist()  # 토큰 블랙리스트에 추가
+        token.blacklist()
         
         return Response({
             'success': True,
             'message': '로그아웃 성공'
         }, status=status.HTTP_200_OK)
+        
+    except TokenError:
+        return Response({
+            'success': False,
+            'message': '유효하지 않은 토큰입니다.'
+        }, status=status.HTTP_400_BAD_REQUEST)
+        
     except Exception as e:
         return Response({
             'success': False,
             'message': f'로그아웃 실패: {str(e)}'
-        }, status=status.HTTP_400_BAD_REQUEST)
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def token_refresh_view(request):
-    """
-    토큰 갱신 API
-    POST /api/accounts/token/refresh/
-    """
-    try:
-        refresh_token = request.data.get('refresh')
-        token = RefreshToken(refresh_token)
-        
-        return Response({
-            'success': True,
-            'tokens': {
-                'access': str(token.access_token),
-                'refresh': str(token)
-            }
-        }, status=status.HTTP_200_OK)
-    except Exception as e:
-        return Response({
-            'success': False,
-            'message': f'토큰 갱신 실패: {str(e)}'
         }, status=status.HTTP_400_BAD_REQUEST)

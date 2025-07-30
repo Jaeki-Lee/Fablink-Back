@@ -99,7 +99,7 @@ load_environment_config() {
     case $env_type in
         local)
             ENV_FILE=".env.local"
-            DJANGO_SETTINGS="fablink_project.settings.development"
+            DJANGO_SETTINGS="fablink_project.settings.local"
             DB_NAME="fablink_local_db"
             DB_USER="fablink_user"
             DB_PASSWORD="local123"
@@ -113,7 +113,7 @@ load_environment_config() {
             ;;
         dev)
             ENV_FILE=".env.dev"
-            DJANGO_SETTINGS="fablink_project.settings.development"
+            DJANGO_SETTINGS="fablink_project.settings.dev"
             DB_NAME="fablink_dev_db"
             DB_USER="fablink_dev_user"
             DB_PASSWORD="dev-db-password"
@@ -127,7 +127,7 @@ load_environment_config() {
             ;;
         prod)
             ENV_FILE=".env.prod"
-            DJANGO_SETTINGS="fablink_project.settings.production"
+            DJANGO_SETTINGS="fablink_project.settings.prod"
             DB_NAME="fablink_prod_db"
             DB_USER="fablink_prod_user"
             DB_PASSWORD="super-secure-prod-password"

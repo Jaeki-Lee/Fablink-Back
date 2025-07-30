@@ -31,6 +31,9 @@ INSTALLED_APPS += [
     'debug_toolbar',      # 디버그 툴바
 ]
 
+# Debug Toolbar 미들웨어 추가
+MIDDLEWARE += ['debug_toolbar.middleware.DebugToolbarMiddleware']
+
 # 로컬 개발환경 전용 설정
 INTERNAL_IPS = [
     '127.0.0.1',
@@ -41,7 +44,7 @@ INTERNAL_IPS = [
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']
+STATICFILES_DIRS = []  # 빈 리스트로 설정
 
 # 로컬 개발환경용 CORS 설정
 CORS_ALLOWED_ORIGINS = [
