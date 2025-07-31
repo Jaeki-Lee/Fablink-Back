@@ -76,37 +76,27 @@ else
     LOCALE_CTYPE="en_US.UTF-8"
 fi
 
-$PSQL_CMD << 'EOSQL'
--- 기존 데이터베이스 및 사용자 삭제 (있다면)
-DROP DATABASE IF EXISTS fablink_local_db;
-DROP USER IF EXISTS fablink_user;
+# 기존 데이터베이스 및 사용자 정리
+$PSQL_CMD -c "DROP DATABASE IF EXISTS fablink_local_db;" 2>/dev/null || true
+$PSQL_CMD -c "REVOKE ALL PRIVILEGES ON DATABASE fablink_db FROM fablink_user;" 2>/dev/null || true
+$PSQL_CMD -c "DROP USER IF EXISTS fablink_user;" 2>/dev/null || true
 
--- 로컬 개발환경 사용자 생성
-CREATE USER fablink_user WITH PASSWORD 'local123';
-ALTER ROLE fablink_user SET client_encoding TO 'utf8';
-ALTER ROLE fablink_user SET default_transaction_isolation TO 'read committed';
-ALTER ROLE fablink_user SET timezone TO 'Asia/Seoul';
-ALTER USER fablink_user CREATEDB;
+# 로컬 개발환경 사용자 생성
+$PSQL_CMD -c "CREATE USER fablink_user WITH PASSWORD 'local123' CREATEDB SUPERUSER;"
+$PSQL_CMD -c "ALTER ROLE fablink_user SET client_encoding TO 'utf8';"
+$PSQL_CMD -c "ALTER ROLE fablink_user SET default_transaction_isolation TO 'read committed';"
+$PSQL_CMD -c "ALTER ROLE fablink_user SET timezone TO 'Asia/Seoul';"
 
--- 로컬 개발환경 데이터베이스 생성
-CREATE DATABASE fablink_local_db
-    WITH 
-    OWNER = fablink_user
-    ENCODING = 'UTF8'
-    TEMPLATE = template0
-    LC_COLLATE = '$LOCALE_COLLATE'
-    LC_CTYPE = '$LOCALE_CTYPE'
-    TABLESPACE = pg_default
-    CONNECTION LIMIT = -1;
+# 로컬 개발환경 데이터베이스 생성 (로케일 변수 직접 사용)
+$PSQL_CMD -c "CREATE DATABASE fablink_local_db WITH OWNER fablink_user ENCODING 'UTF8' LC_COLLATE='${LOCALE_COLLATE}' LC_CTYPE='${LOCALE_CTYPE}';"
 
--- 권한 부여
-GRANT ALL PRIVILEGES ON DATABASE fablink_local_db TO fablink_user;
+# 권한 부여
+$PSQL_CMD -c "GRANT ALL PRIVILEGES ON DATABASE fablink_local_db TO fablink_user;"
 
-\echo '✅ 로컬 개발환경 PostgreSQL 설정 완료!'
-\echo '📋 데이터베이스: fablink_local_db'
-\echo '👤 사용자: fablink_user'
-\echo '🔑 비밀번호: local123'
-EOSQL
+echo "✅ 로컬 개발환경 PostgreSQL 설정 완료!"
+echo "📋 데이터베이스: fablink_local_db"
+echo "👤 사용자: fablink_user"
+echo "🔑 비밀번호: local123"
 
 # 추가 권한 설정
 $PSQL_CMD -d fablink_local_db << 'EOSQL'
