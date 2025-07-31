@@ -3,8 +3,9 @@ accounts 앱의 비즈니스 로직을 담당하는 서비스 레이어
 """
 
 from django.contrib.auth import authenticate
-from rest_framework.authtoken.models import Token
 from rest_framework import serializers
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
 from .models import User
 from .serializers import UserSerializer
 
@@ -15,49 +16,46 @@ class AuthService:
     """
     
     @staticmethod
-    def login_user(user_id: str, password: str, user_type: str = None) -> dict:
+    def login_user(username: str, password: str) -> dict:
         """
         사용자 로그인 처리
         
         Args:
-            user_id (str): 사용자 ID
+            username (str): 사용자명
             password (str): 비밀번호
-            user_type (str, optional): 사용자 타입
             
         Returns:
-            dict: 로그인 결과 (user, token)
+            dict: 로그인 결과 (user, tokens)
             
         Raises:
             serializers.ValidationError: 로그인 실패 시
         """
-        if not user_id or not password:
-            raise serializers.ValidationError('사용자 ID와 비밀번호를 모두 입력해주세요.')
+        if not username or not password:
+            raise serializers.ValidationError('사용자명과 비밀번호를 모두 입력해주세요.')
         
         # 사용자 인증
-        user = authenticate(username=user_id, password=password)
+        user = authenticate(username=username, password=password)
         if not user:
             raise serializers.ValidationError("유저가 존재하지 않습니다. 아이디와 비밀번호를 확인해주세요.")
         
-        # 사용자 타입 검증
-        if user_type and user.user_type != user_type:
-            raise serializers.ValidationError("선택한 사용자 타입과 계정 타입이 일치하지 않습니다.")
-        
-        # 토큰 생성 또는 조회
-        token, created = Token.objects.get_or_create(user=user)
+        # JWT 토큰 생성
+        refresh = RefreshToken.for_user(user)
         
         return {
             'user': user,
-            'token': token,
-            'is_new_token': created
+            'tokens': {
+                'access': str(refresh.access_token),
+                'refresh': str(refresh)
+            }
         }
     
     @staticmethod
-    def logout_user(user: User) -> dict:
+    def logout_user(refresh_token: str) -> dict:
         """
         사용자 로그아웃 처리
         
         Args:
-            user (User): 로그아웃할 사용자
+            refresh_token (str): 리프레시 토큰
             
         Returns:
             dict: 로그아웃 결과
@@ -65,11 +63,18 @@ class AuthService:
         Raises:
             serializers.ValidationError: 로그아웃 실패 시
         """
+        if not refresh_token:
+            raise serializers.ValidationError('Refresh 토큰이 필요합니다.')
+        
         try:
-            user.auth_token.delete()
+            # 토큰 블랙리스트에 추가
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            
             return {'success': True, 'message': '로그아웃 성공'}
-        except Token.DoesNotExist:
-            raise serializers.ValidationError('이미 로그아웃되었습니다.')
+            
+        except TokenError:
+            raise serializers.ValidationError('유효하지 않은 토큰입니다.')
         except Exception as e:
             raise serializers.ValidationError(f'로그아웃 실패: {str(e)}')
     

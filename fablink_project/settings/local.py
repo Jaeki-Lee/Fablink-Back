@@ -1,20 +1,3 @@
-<<<<<<< HEAD
-from .development import *
-
-# 로컬 개발 환경에 특화된 설정
-DEBUG = True
-
-# CORS 설정 완화
-CORS_ALLOW_ALL_ORIGINS = True
-
-# 로깅 설정
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-=======
 # fablink_project/settings/local.py
 from .base import *
 
@@ -69,6 +52,9 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
 ]
 
+# CORS 설정 완화 (로컬 개발용)
+CORS_ALLOW_ALL_ORIGINS = True
+
 # 로컬 개발환경용 로깅
 LOGGING = {
     'version': 1,
@@ -84,15 +70,10 @@ LOGGING = {
             'level': 'DEBUG',
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
->>>>>>> e33323476e2dd02895507acc67ffce896ce6cd48
         },
     },
     'root': {
         'handlers': ['console'],
         'level': 'INFO',
     },
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> e33323476e2dd02895507acc67ffce896ce6cd48

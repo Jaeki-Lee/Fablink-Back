@@ -123,11 +123,7 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
-<<<<<<< HEAD
-        'rest_framework.authentication.TokenAuthentication',
-=======
         'rest_framework_simplejwt.authentication.JWTAuthentication',
->>>>>>> e33323476e2dd02895507acc67ffce896ce6cd48
         'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
