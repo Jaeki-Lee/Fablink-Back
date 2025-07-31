@@ -1,50 +1,92 @@
 from rest_framework import status
-from rest_framework.views import APIView
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
-from rest_framework.authtoken.models import Token
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
 from django.contrib.auth import authenticate
-from django.contrib.auth.models import User
-from .serializers import UserSerializer
+from .serializers import LoginSerializer, UserSerializer
 
-class LoginView(APIView):
-    permission_classes = [AllowAny]
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def login_view(request):
+    """
+    사용자 로그인 API
+    POST /api/accounts/login/
+    """
+    serializer = LoginSerializer(data=request.data)
+    
+    if serializer.is_valid():
+        user = serializer.validated_data['user']
+        refresh = RefreshToken.for_user(user)
+        user_serializer = UserSerializer(user)
 
-    def post(self, request):
-        id = request.data.get('id')
-        password = request.data.get('password')
-        user_type = request.data.get('userType')
-        
-        # 사용자 인증
-        user = authenticate(username=id, password=password)
-        
-        if user is None:
-            return Response(
-                {"message": "아이디 또는 비밀번호가 일치하지 않습니다."}, 
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-        
-        # 사용자 타입 확인 (프로필 모델에서 확인하거나 그룹으로 확인)
-        if hasattr(user, 'profile') and user.profile.user_type != user_type:
-            return Response(
-                {"message": "사용자 타입이 일치하지 않습니다."}, 
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-        
-        # 토큰 생성 (기본 토큰 인증 사용)
-        token, created = Token.objects.get_or_create(user=user)
+        return Response({
+            'success': True,
+            'message': '로그인 성공',
+            'tokens': {
+                'access': str(refresh.access_token),
+                'refresh': str(refresh)
+            },
+            'user': user_serializer.data
+        }, status=status.HTTP_200_OK)
+
+    return Response({
+        'success': False,
+        'message': '로그인 실패',
+        'errors': serializer.errors,
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_info_view(request):
+    """
+    현재 로그인된 사용자 정보 조회 API
+    GET /api/accounts/user/
+    """
+    user_serializer = UserSerializer(request.user)
+    return Response({
+        'success': True,
+        'user': user_serializer.data
+    }, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def logout_view(request):
+    """
+    사용자 로그아웃 API
+    POST /api/accounts/logout/
+    
+    Request Body:
+    {
+        "refresh": "your-refresh-token"
+    }
+    """
+    try:
+        refresh_token = request.data.get('refresh')
+        if not refresh_token:
+            return Response({
+                'success': False,
+                'message': 'Refresh 토큰이 필요합니다.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 토큰 블랙리스트에 추가
+        token = RefreshToken(refresh_token)
+        token.blacklist()
         
         return Response({
-            "message": "로그인 성공",
-            "user": {
-                "id": user.username,
-                "userType": user_type,
-                "loginTime": request.data.get('loginTime', None)
-            },
-            "token": token.key
-        })
-
-class UserInfoView(APIView):
-    def get(self, request):
-        serializer = UserSerializer(request.user)
-        return Response(serializer.data)
+            'success': True,
+            'message': '로그아웃 성공'
+        }, status=status.HTTP_200_OK)
+        
+    except TokenError:
+        return Response({
+            'success': False,
+            'message': '유효하지 않은 토큰입니다.'
+        }, status=status.HTTP_400_BAD_REQUEST)
+        
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'로그아웃 실패: {str(e)}'
+        }, status=status.HTTP_400_BAD_REQUEST)

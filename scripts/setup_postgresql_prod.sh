@@ -1,8 +1,7 @@
-# =================================================================
-# scripts/setup_postgresql_prod.sh - 운영환경 PostgreSQL DB 생성
-# =================================================================
-
 #!/bin/bash
+# =================================================================
+# scripts/setup_postgresql_prod.sh - 운영 서버환경 PostgreSQL DB 설정
+# =================================================================
 
 set -e
 
@@ -29,150 +28,246 @@ log_error() {
     echo -e "${RED}❌ $1${NC}"
 }
 
-log_warning "운영환경 PostgreSQL 데이터베이스 설정을 시작합니다..."
-echo "🚨 이는 운영환경 설정입니다. 매우 신중하게 진행하세요!"
+log_warning "🚨 운영 서버환경 PostgreSQL 데이터베이스 설정을 시작합니다."
+log_warning "이 작업은 운영 환경에 영향을 줄 수 있습니다. 신중하게 진행하세요."
+echo ""
 
-# 확인
-read -p "🔐 운영환경 DB 설정을 계속하시겠습니까? (PRODUCTION 입력): " confirm
-if [[ $confirm != "PRODUCTION" ]]; then
-    log_error "운영환경 설정이 취소되었습니다."
+# 운영환경 확인
+echo -e "${RED}⚠️ 운영환경 체크리스트:${NC}"
+echo "□ AWS RDS PostgreSQL 운영 인스턴스가 준비되어 있는가?"
+echo "□ 데이터베이스 백업이 설정되어 있는가?"
+echo "□ 보안 그룹이 올바르게 설정되어 있는가?"
+echo "□ SSL 연결이 강제되어 있는가?"
+echo "□ 모니터링이 설정되어 있는가?"
+echo "□ 데이터베이스 파라미터 그룹이 운영환경에 맞게 설정되어 있는가?"
+echo ""
+
+read -p "모든 체크리스트를 확인했습니까? (yes/no): " checklist_confirm
+if [[ $checklist_confirm != "yes" ]]; then
+    log_error "운영환경 설정을 취소합니다."
     exit 1
 fi
 
-# PostgreSQL 설치 확인
-if ! command -v psql &> /dev/null; then
-    log_error "PostgreSQL이 설치되지 않았습니다. 먼저 설치해주세요."
+echo ""
+log_info "운영환경 데이터베이스 정보를 입력해주세요:"
+
+# 사용자 입력 받기
+read -p "RDS 엔드포인트를 입력하세요: " RDS_ENDPOINT
+if [[ -z "$RDS_ENDPOINT" ]]; then
+    log_error "RDS 엔드포인트는 필수입니다."
     exit 1
 fi
 
-# PostgreSQL 서비스 시작
-log_info "PostgreSQL 서비스를 확인합니다..."
-sudo systemctl start postgresql
-sudo systemctl enable postgresql
+read -p "마스터 사용자명을 입력하세요 (기본값: postgres): " MASTER_USER
+MASTER_USER=${MASTER_USER:-postgres}
 
-# 강력한 비밀번호 생성
-PROD_PASSWORD=$(openssl rand -base64 32)
+echo "마스터 비밀번호를 입력하세요:"
+read -s MASTER_PASSWORD
+echo ""
+
+if [[ -z "$MASTER_PASSWORD" ]]; then
+    log_error "마스터 비밀번호는 필수입니다."
+    exit 1
+fi
+
+# 운영환경 데이터베이스 정보
+PROD_DB_NAME="fablink_prod_db"
+PROD_DB_USER="fablink_prod_user"
+
+echo ""
+echo "운영환경 데이터베이스 사용자의 강력한 비밀번호를 설정하세요:"
+echo "(최소 12자, 대소문자, 숫자, 특수문자 포함)"
+read -s PROD_DB_PASSWORD
+echo ""
+echo "비밀번호를 다시 입력하세요:"
+read -s PROD_DB_PASSWORD_CONFIRM
+echo ""
+
+if [[ "$PROD_DB_PASSWORD" != "$PROD_DB_PASSWORD_CONFIRM" ]]; then
+    log_error "비밀번호가 일치하지 않습니다."
+    exit 1
+fi
+
+if [[ ${#PROD_DB_PASSWORD} -lt 12 ]]; then
+    log_error "비밀번호는 최소 12자 이상이어야 합니다."
+    exit 1
+fi
 
 log_info "운영환경 데이터베이스와 사용자를 생성합니다..."
 
-sudo -u postgres psql << EOSQL
--- 기존 운영환경 데이터베이스 및 사용자 확인 및 삭제
-DROP DATABASE IF EXISTS fablink_prod_db;
-DROP USER IF EXISTS fablink_prod_user;
+# PostgreSQL 연결 테스트
+log_info "RDS 연결을 테스트합니다..."
+if ! PGPASSWORD=$MASTER_PASSWORD psql -h $RDS_ENDPOINT -U $MASTER_USER -d postgres -c "SELECT version();" > /dev/null 2>&1; then
+    log_error "RDS에 연결할 수 없습니다. 다음을 확인해주세요:"
+    echo "  • RDS 엔드포인트가 올바른가?"
+    echo "  • 마스터 사용자명과 비밀번호가 올바른가?"
+    echo "  • 보안 그룹에서 현재 IP가 허용되어 있는가?"
+    echo "  • RDS 인스턴스가 실행 중인가?"
+    exit 1
+fi
+log_success "RDS 연결 테스트 성공!"
 
--- 운영환경 사용자 생성 (강력한 보안)
-CREATE USER fablink_prod_user WITH PASSWORD '$PROD_PASSWORD';
-ALTER ROLE fablink_prod_user SET client_encoding TO 'utf8';
-ALTER ROLE fablink_prod_user SET default_transaction_isolation TO 'read committed';
-ALTER ROLE fablink_prod_user SET timezone TO 'Asia/Seoul';
+# SSL 연결 확인
+log_info "SSL 연결을 확인합니다..."
+SSL_STATUS=$(PGPASSWORD=$MASTER_PASSWORD psql -h $RDS_ENDPOINT -U $MASTER_USER -d postgres -t -c "SHOW ssl;" | xargs)
+if [[ "$SSL_STATUS" != "on" ]]; then
+    log_warning "SSL이 활성화되지 않았습니다. 운영환경에서는 SSL을 사용하는 것을 강력히 권장합니다."
+else
+    log_success "SSL 연결이 활성화되어 있습니다."
+fi
 
--- 운영환경 데이터베이스 생성
-CREATE DATABASE fablink_prod_db
-    WITH 
-    OWNER = fablink_prod_user
-    ENCODING = 'UTF8'
-    TEMPLATE = template0
-    LC_COLLATE = 'C.UTF-8'
-    LC_CTYPE = 'C.UTF-8'
-    TABLESPACE = pg_default
-    CONNECTION LIMIT = 50;
+# 최종 확인
+echo ""
+log_warning "다음 작업을 수행합니다:"
+echo "  • 데이터베이스: $PROD_DB_NAME 생성"
+echo "  • 사용자: $PROD_DB_USER 생성"
+echo "  • 권한 설정"
+echo ""
+read -p "계속 진행하시겠습니까? (yes/no): " final_confirm
+if [[ $final_confirm != "yes" ]]; then
+    log_error "운영환경 설정을 취소합니다."
+    exit 1
+fi
 
--- 제한된 권한 부여 (보안 강화)
-GRANT CONNECT ON DATABASE fablink_prod_db TO fablink_prod_user;
-GRANT USAGE ON SCHEMA public TO fablink_prod_user;
-GRANT CREATE ON SCHEMA public TO fablink_prod_user;
+# 운영환경 데이터베이스 및 사용자 생성
+log_info "운영환경 데이터베이스와 사용자를 생성합니다..."
 
-\echo '✅ 운영환경 PostgreSQL 설정 완료!'
-\echo '🔐 비밀번호가 자동 생성되었습니다.'
+PGPASSWORD=$MASTER_PASSWORD psql -h $RDS_ENDPOINT -U $MASTER_USER -d postgres << EOSQL
+-- 기존 데이터베이스 및 사용자 확인 (운영환경에서는 삭제하지 않음)
+DO \$\$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_database WHERE datname = '$PROD_DB_NAME') THEN
+        RAISE NOTICE '⚠️ 데이터베이스 $PROD_DB_NAME이 이미 존재합니다.';
+    ELSE
+        -- 운영환경 데이터베이스 생성
+        CREATE DATABASE $PROD_DB_NAME
+            WITH 
+            OWNER = $MASTER_USER
+            ENCODING = 'UTF8'
+            TEMPLATE = template0
+            LC_COLLATE = 'C.UTF-8'
+            LC_CTYPE = 'C.UTF-8'
+            TABLESPACE = pg_default
+            CONNECTION LIMIT = -1;
+        RAISE NOTICE '✅ 데이터베이스 $PROD_DB_NAME이 생성되었습니다.';
+    END IF;
+END
+\$\$;
+
+-- 운영환경 사용자 생성 또는 업데이트
+DO \$\$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_user WHERE usename = '$PROD_DB_USER') THEN
+        -- 기존 사용자 비밀번호 업데이트
+        ALTER USER $PROD_DB_USER WITH PASSWORD '$PROD_DB_PASSWORD';
+        RAISE NOTICE '✅ 사용자 $PROD_DB_USER의 비밀번호가 업데이트되었습니다.';
+    ELSE
+        -- 새 사용자 생성
+        CREATE USER $PROD_DB_USER WITH PASSWORD '$PROD_DB_PASSWORD';
+        RAISE NOTICE '✅ 사용자 $PROD_DB_USER가 생성되었습니다.';
+    END IF;
+END
+\$\$;
+
+-- 사용자 설정
+ALTER ROLE $PROD_DB_USER SET client_encoding TO 'utf8';
+ALTER ROLE $PROD_DB_USER SET default_transaction_isolation TO 'read committed';
+ALTER ROLE $PROD_DB_USER SET timezone TO 'Asia/Seoul';
+
+-- 데이터베이스 소유권 변경
+ALTER DATABASE $PROD_DB_NAME OWNER TO $PROD_DB_USER;
+
+-- 권한 부여
+GRANT ALL PRIVILEGES ON DATABASE $PROD_DB_NAME TO $PROD_DB_USER;
+
+\echo '✅ 운영 서버환경 PostgreSQL 설정 완료!'
 EOSQL
 
-# 추가 권한 설정
-sudo -u postgres psql -d fablink_prod_db << 'EOSQL'
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO fablink_prod_user;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO fablink_prod_user;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO fablink_prod_user;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO fablink_prod_user;
+# 데이터베이스별 권한 설정
+log_info "데이터베이스별 권한을 설정합니다..."
+PGPASSWORD=$PROD_DB_PASSWORD psql -h $RDS_ENDPOINT -U $PROD_DB_USER -d $PROD_DB_NAME << EOSQL
+GRANT ALL ON SCHEMA public TO $PROD_DB_USER;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO $PROD_DB_USER;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO $PROD_DB_USER;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO $PROD_DB_USER;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO $PROD_DB_USER;
 EOSQL
-
-# 강력한 SECRET_KEY 생성
-SECRET_KEY=$(python3 -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())')
-
-# 운영환경 .env 파일 생성
-log_info "운영환경 .env 파일을 생성합니다..."
-
-cat > .env << EOF
-# Django Settings (Production)
-SECRET_KEY=${SECRET_KEY}
-DEBUG=False
-ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com,your-server-ip
-
-# Database (Production PostgreSQL)
-DB_ENGINE=django.db.backends.postgresql
-DB_NAME=fablink_prod_db
-DB_USER=fablink_prod_user
-DB_PASSWORD=${PROD_PASSWORD}
-DB_HOST=localhost
-DB_PORT=5432
-
-# Email Settings (Production SMTP)
-EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_USE_TLS=True
-EMAIL_HOST_USER=noreply@yourdomain.com
-EMAIL_HOST_PASSWORD=your-smtp-password
-
-# File Storage (AWS S3 for production)
-USE_S3=True
-AWS_ACCESS_KEY_ID=your-aws-access-key
-AWS_SECRET_ACCESS_KEY=your-aws-secret-key
-AWS_STORAGE_BUCKET_NAME=fablink-production-media
-
-# Security Settings
-SECURE_SSL_REDIRECT=True
-SECURE_BROWSER_XSS_FILTER=True
-SECURE_CONTENT_TYPE_NOSNIFF=True
-X_FRAME_OPTIONS=DENY
-
-# Celery (Redis for production)
-CELERY_BROKER_URL=redis://localhost:6379/0
-CELERY_RESULT_BACKEND=redis://localhost:6379/0
-
-# Environment
-DJANGO_ENV=production
-EOF
 
 # 연결 테스트
 log_info "운영 데이터베이스 연결을 테스트합니다..."
-if PGPASSWORD=$PROD_PASSWORD psql -h localhost -U fablink_prod_user -d fablink_prod_db -c "SELECT version();" > /dev/null 2>&1; then
+if PGPASSWORD=$PROD_DB_PASSWORD psql -h $RDS_ENDPOINT -U $PROD_DB_USER -d $PROD_DB_NAME -c "SELECT version();" > /dev/null 2>&1; then
     log_success "운영 데이터베이스 연결 테스트 성공!"
 else
     log_error "운영 데이터베이스 연결 테스트 실패!"
     exit 1
 fi
 
+# .env.prod 파일 업데이트 (있다면)
+if [ -f ".env.prod" ]; then
+    log_info ".env.prod 파일의 데이터베이스 정보를 업데이트합니다..."
+    
+    # 백업 생성
+    cp .env.prod .env.prod.backup.$(date +%Y%m%d_%H%M%S)
+    
+    # 데이터베이스 정보 업데이트
+    sed -i.tmp \
+        -e "s/DB_HOST=.*/DB_HOST=$RDS_ENDPOINT/" \
+        -e "s/DB_NAME=.*/DB_NAME=$PROD_DB_NAME/" \
+        -e "s/DB_USER=.*/DB_USER=$PROD_DB_USER/" \
+        -e "s/DB_PASSWORD=.*/DB_PASSWORD=$PROD_DB_PASSWORD/" \
+        .env.prod
+    
+    rm .env.prod.tmp
+    
+    # 파일 권한 설정
+    chmod 600 .env.prod
+    log_success ".env.prod 파일이 업데이트되었습니다."
+fi
+
 # 보안 정보 저장
-cat > .env.production.backup << EOF
-# ⚠️ 이 정보를 안전한 곳에 백업하세요!
-# 운영환경 데이터베이스 접속 정보
+SECURITY_INFO_FILE="prod_db_info_$(date +%Y%m%d_%H%M%S).txt"
+cat > $SECURITY_INFO_FILE << EOF
+FabLink 운영환경 데이터베이스 정보
+생성일시: $(date)
 
-DB_NAME=fablink_prod_db
-DB_USER=fablink_prod_user
-DB_PASSWORD=${PROD_PASSWORD}
-SECRET_KEY=${SECRET_KEY}
+호스트: $RDS_ENDPOINT
+데이터베이스: $PROD_DB_NAME
+사용자: $PROD_DB_USER
+비밀번호: $PROD_DB_PASSWORD
 
-# 생성 날짜: $(date)
+⚠️ 이 파일은 안전한 곳에 보관하고, 설정 완료 후 삭제하세요.
 EOF
 
+chmod 600 $SECURITY_INFO_FILE
+
 echo ""
-log_success "🎉 운영환경 PostgreSQL 설정이 완료되었습니다!"
+log_success "🎉 운영 서버환경 PostgreSQL 설정이 완료되었습니다!"
 echo ""
-echo -e "${BLUE}📋 운영 데이터베이스 정보:${NC}"
-echo "   🏷️  데이터베이스: fablink_prod_db"
-echo "   👤 사용자: fablink_prod_user"
-echo "   🔑 비밀번호: ${PROD_PASSWORD}"
-echo "   🌐 호스트: localhost:5432"
+echo -e "${BLUE}📋 운영 서버 데이터베이스 정보:${NC}"
+echo "   🌐 호스트: $RDS_ENDPOINT"
+echo "   🏷️  데이터베이스: $PROD_DB_NAME"
+echo "   👤 사용자: $PROD_DB_USER"
+echo "   🔑 비밀번호: [보안 정보 파일 참조]"
 echo ""
-echo -e "${RED}🔐 중요: 비밀번호가 .env.production.backup 파일에 저장되었습니다!${NC}"
-echo -e "${YELLOW}🚀 다음 단계: ./scripts/setup_prod.sh 실행${NC}"
+echo -e "${RED}🔐 중요한 보안 사항:${NC}"
+echo "   • 데이터베이스 정보가 $SECURITY_INFO_FILE 파일에 저장되었습니다"
+echo "   • 이 파일을 안전한 곳에 백업하고 서버에서는 삭제하세요"
+echo "   • .env.prod 파일의 권한이 600으로 설정되었습니다"
+echo "   • 정기적으로 비밀번호를 변경하세요"
+echo "   • 데이터베이스 접근 로그를 모니터링하세요"
+echo ""
+echo -e "${YELLOW}🚀 다음 단계:${NC}"
+echo "   1. $SECURITY_INFO_FILE 파일을 안전한 곳에 백업"
+echo "   2. 서버에서 보안 정보 파일 삭제: rm $SECURITY_INFO_FILE"
+echo "   3. .env.prod 파일의 다른 환경변수들도 확인"
+echo "   4. ./scripts/first_build.sh prod"
+echo ""
+echo -e "${BLUE}🗄️ 데이터베이스 직접 접속:${NC}"
+echo "   psql -h $RDS_ENDPOINT -U $PROD_DB_USER -d $PROD_DB_NAME"
+echo ""
+echo -e "${YELLOW}📊 모니터링 설정 권장사항:${NC}"
+echo "   • CloudWatch에서 데이터베이스 메트릭 모니터링"
+echo "   • 연결 수, CPU 사용률, 메모리 사용률 알람 설정"
+echo "   • 슬로우 쿼리 로그 활성화"
+echo "   • 정기적인 백업 스케줄 확인"
 echo ""
