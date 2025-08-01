@@ -7,6 +7,9 @@ from .serializers import LoginSerializer
 from .services import AuthService
 
 
+from rest_framework_simplejwt.tokens import RefreshToken
+
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login_view(request):
@@ -26,13 +29,16 @@ def login_view(request):
     try:
         # 비즈니스 로직을 서비스 레이어로 위임
         user = serializer.validated_data['user']
-        result = AuthService.login_user(user.user_id, request.data.get('password'))
+        refresh = RefreshToken.for_user(user)
         
         return Response({
             'success': True,
             'message': '로그인 성공',
-            'tokens': result['tokens'],
-            'user': AuthService.get_user_info(result['user'])
+            'tokens': {
+                'access': str(refresh.access_token),
+                'refresh': str(refresh)
+            },
+            'user': AuthService.get_user_info(user)
         }, status=status.HTTP_200_OK)
         
     except serializers.ValidationError as e:

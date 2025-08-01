@@ -15,39 +15,7 @@ class AuthService:
     인증 관련 비즈니스 로직을 처리하는 서비스
     """
     
-    @staticmethod
-    def login_user(username: str, password: str) -> dict:
-        """
-        사용자 로그인 처리
-        
-        Args:
-            username (str): 사용자명
-            password (str): 비밀번호
-            
-        Returns:
-            dict: 로그인 결과 (user, tokens)
-            
-        Raises:
-            serializers.ValidationError: 로그인 실패 시
-        """
-        if not username or not password:
-            raise serializers.ValidationError('사용자명과 비밀번호를 모두 입력해주세요.')
-        
-        # 사용자 인증
-        user = authenticate(username=username, password=password)
-        if not user:
-            raise serializers.ValidationError("유저가 존재하지 않습니다. 아이디와 비밀번호를 확인해주세요.")
-        
-        # JWT 토큰 생성
-        refresh = RefreshToken.for_user(user)
-        
-        return {
-            'user': user,
-            'tokens': {
-                'access': str(refresh.access_token),
-                'refresh': str(refresh)
-            }
-        }
+    
     
     @staticmethod
     def logout_user(refresh_token: str) -> dict:
