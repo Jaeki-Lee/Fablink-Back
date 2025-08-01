@@ -26,6 +26,8 @@ class Product(models.Model):
     concept = models.TextField()
     detail = models.TextField(blank=True, null=True) # 포인트 부위 설명 추가
     image_path = models.ImageField(upload_to='design_image/', blank=True, null=True)
+    fabric = models.JSONField(blank=True, null=True)
+    material = models.JSONField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
