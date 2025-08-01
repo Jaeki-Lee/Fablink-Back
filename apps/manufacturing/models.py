@@ -24,6 +24,7 @@ class Product(models.Model):
     season = models.CharField(max_length=20, choices=SEASON_CHOICES)
     target_customer = models.CharField(max_length=20, choices=TARGET_CHOICES)
     concept = models.TextField()
+    detail = models.TextField(blank=True, null=True) # 포인트 부위 설명 추가
     image_path = models.ImageField(upload_to='design_image/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
