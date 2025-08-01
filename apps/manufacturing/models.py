@@ -7,13 +7,16 @@ class Product(models.Model):
         ('summer', '여름'),
         ('autumn', '가을'),
         ('winter', '겨울'),
+        ('all-season', '사계절'),
     )
     
     TARGET_CHOICES = (
-        ('child', '아동'),
-        ('teen', '청소년'),
-        ('adult', '성인'),
-        ('senior', '시니어'),
+        ('teens', '10대'),
+        ('twenties', '20대'),
+        ('thirties', '30대'),
+        ('forties', '40대'),
+        ('fifties-plus', '50대 이상'),
+        ('all-ages', '전 연령'),
     )
     
     designer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -21,6 +24,8 @@ class Product(models.Model):
     season = models.CharField(max_length=20, choices=SEASON_CHOICES)
     target_customer = models.CharField(max_length=20, choices=TARGET_CHOICES)
     concept = models.TextField()
+    detail = models.TextField(blank=True, null=True) # 포인트 부위 설명 추가
+    image_path = models.ImageField(upload_to='design_image/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
