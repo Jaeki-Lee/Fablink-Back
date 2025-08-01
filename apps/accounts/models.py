@@ -1,10 +1,11 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 
-class UserManager(BaseUserManager):
+class DesignerManager(BaseUserManager):
+    """디자이너 매니저"""
     def create_user(self, user_id, password=None, **extra_fields):
         if not user_id:
-            raise ValueError('User ID는 필수입니다.')
+            raise ValueError('사용자 ID는 필수입니다.')
         
         user = self.model(user_id=user_id, **extra_fields)
         user.set_password(password)
@@ -17,40 +18,9 @@ class UserManager(BaseUserManager):
         
         return self.create_user(user_id, password, **extra_fields)
 
-class User(AbstractBaseUser, PermissionsMixin):
-    USER_TYPE_CHOICES = (
-        ('designer', '디자이너'),
-        ('factory', '공장주'),
-    )
-    
-    # id는 자동으로 PK가 됨 (Django 기본) # id 필드 따로 존재
-    user_id = models.CharField(max_length=20, unique=True)  # unique 필드
-    user_type = models.CharField(max_length=20, choices=USER_TYPE_CHOICES, default='designer')
-    name = models.CharField(max_length=20, default="")
-    contact = models.CharField(max_length=20, default="")
-    address = models.TextField(default="")
-    
-    # 관리자 권한용
-    is_active = models.BooleanField(default=True)
-    is_staff = models.BooleanField(default=False)
-    
-    # 타임스탬프
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    objects = UserManager()
-
-    USERNAME_FIELD = 'user_id'
-    REQUIRED_FIELDS = []
-
-    def __str__(self):
-        return f"{self.user_id} - {self.name} ({self.get_user_type_display()})"
-
-
-class Designer(models.Model):
+class Designer(AbstractBaseUser, PermissionsMixin):
     """디자이너 모델"""
     user_id = models.CharField(max_length=50, unique=True, verbose_name="사용자 ID")
-    password = models.CharField(max_length=255, verbose_name="비밀번호")
     name = models.CharField(max_length=100, verbose_name="이름")
     profile_image = models.ImageField(
         upload_to='profiles/designers/', 
@@ -60,9 +30,19 @@ class Designer(models.Model):
     )
     contact = models.CharField(max_length=50, null=True, blank=True, verbose_name="연락처")
     address = models.TextField(null=True, blank=True, verbose_name="주소")
+    
+    # Django 인증 시스템 필수 필드
     is_active = models.BooleanField(default=True, verbose_name="활성 상태")
+    is_staff = models.BooleanField(default=False, verbose_name="스태프 권한")
+    
+    # 타임스탬프
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="생성일시")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="수정일시")
+
+    objects = DesignerManager()
+
+    USERNAME_FIELD = 'user_id'
+    REQUIRED_FIELDS = ['name']
 
     class Meta:
         db_table = 'designers'
@@ -73,12 +53,38 @@ class Designer(models.Model):
     def __str__(self):
         return f"{self.name} ({self.user_id})"
 
+    def get_full_name(self):
+        """전체 이름 반환"""
+        return self.name
 
-class Factory(models.Model):
-    """공장 모델"""
+    def get_short_name(self):
+        """짧은 이름 반환"""
+        return self.name
+
+
+class FactoryManager(BaseUserManager):
+    """공장주 매니저"""
+    def create_user(self, user_id, password=None, **extra_fields):
+        if not user_id:
+            raise ValueError('사용자 ID는 필수입니다.')
+        
+        user = self.model(user_id=user_id, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+    
+    def create_superuser(self, user_id, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        
+        return self.create_user(user_id, password, **extra_fields)
+
+class Factory(AbstractBaseUser, PermissionsMixin):
+    """공장주 모델"""
     user_id = models.CharField(max_length=50, unique=True, verbose_name="사용자 ID")
-    password = models.CharField(max_length=255, verbose_name="비밀번호")
-    name = models.CharField(max_length=100, verbose_name="공장명")
+    name = models.CharField(max_length=100, verbose_name="이름")
+    company_name = models.CharField(max_length=200, verbose_name="회사명")
+    business_license = models.CharField(max_length=50, null=True, blank=True, verbose_name="사업자등록번호")
     profile_image = models.ImageField(
         upload_to='profiles/factories/', 
         null=True, 
@@ -87,15 +93,41 @@ class Factory(models.Model):
     )
     contact = models.CharField(max_length=50, null=True, blank=True, verbose_name="연락처")
     address = models.TextField(null=True, blank=True, verbose_name="주소")
+    
+    # 공장 특화 정보
+    production_capacity = models.IntegerField(null=True, blank=True, verbose_name="생산 능력 (월)")
+    specialties = models.TextField(null=True, blank=True, verbose_name="전문 분야")
+    
+    # Django 인증 시스템 필수 필드
     is_active = models.BooleanField(default=True, verbose_name="활성 상태")
+    is_staff = models.BooleanField(default=False, verbose_name="스태프 권한")
+    
+    # 타임스탬프
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="생성일시")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="수정일시")
 
+    objects = FactoryManager()
+
+    USERNAME_FIELD = 'user_id'
+    REQUIRED_FIELDS = ['name', 'company_name']
+
     class Meta:
-        db_table = 'factory'
-        verbose_name = "공장"
-        verbose_name_plural = "공장들"
+        db_table = 'factories'
+        verbose_name = "공장주"
+        verbose_name_plural = "공장주들"
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"{self.name} ({self.user_id})"
+        return f"{self.name} - {self.company_name} ({self.user_id})"
+
+    def get_full_name(self):
+        """전체 이름 반환"""
+        return f"{self.name} ({self.company_name})"
+
+    def get_short_name(self):
+        """짧은 이름 반환"""
+        return self.name
+
+
+# 기존 User 모델과의 호환성을 위한 별칭 (Designer를 기본으로)
+User = Designer
