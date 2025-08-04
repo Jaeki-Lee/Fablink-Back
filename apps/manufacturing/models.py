@@ -37,7 +37,7 @@ class Product(models.Model):
     season = models.CharField(max_length=20, choices=SEASON_CHOICES, verbose_name="시즌")
     target = models.CharField(max_length=20, choices=TARGET_CHOICES, verbose_name="타겟 고객층")
     concept = models.TextField(verbose_name="컨셉 설명")
-    image_path = models.ImageField(upload_to='design_image/', verbose_name="디자인 이미지")
+    image_path = models.ImageField(upload_to='design_image/', null=True, blank=True, verbose_name="디자인 이미지")
     detail = models.TextField(blank=True, null=True, verbose_name="포인트 부위 설명")
     size = models.CharField(max_length=20, null=True, blank=True, verbose_name="사이즈")
     quantity = models.PositiveIntegerField(
@@ -127,6 +127,17 @@ class Order(models.Model):
         verbose_name="영수증"
     )
     notes = models.TextField(null=True, blank=True, verbose_name="주문 메모")
+    
+    # 고객 정보 (Product의 designer와 다를 수 있음)
+    customer_name = models.CharField(max_length=100, null=True, blank=True, verbose_name="고객명")
+    customer_contact = models.CharField(max_length=50, null=True, blank=True, verbose_name="고객 연락처")
+    customer_email = models.EmailField(null=True, blank=True, verbose_name="고객 이메일")
+    
+    # 배송 정보
+    shipping_address = models.TextField(null=True, blank=True, verbose_name="배송 주소")
+    shipping_method = models.CharField(max_length=50, null=True, blank=True, verbose_name="배송 방법")
+    shipping_cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="배송비")
+    
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="생성일시")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="수정일시")
 
