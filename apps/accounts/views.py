@@ -3,19 +3,32 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import serializers
-from .serializers import LoginSerializer
-from .services import AuthService
-
-
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
 
+from .serializers import (
+    LoginSerializer, 
+    UserSerializer,
+    TokenRefreshSerializer
+)
+from .models import User
+
+
+# ==================== 통합 로그인/로그아웃 ====================
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login_view(request):
     """
-    사용자 로그인 API
+    통합 로그인 API (Designer와 Factory 모두 지원)
     POST /api/accounts/login/
+    
+    Request Body:
+    {
+        "user_id": "user123",
+        "password": "password123",
+        "user_type": "designer" | "factory"
+    }
     """
     serializer = LoginSerializer(data=request.data)
     
@@ -27,47 +40,28 @@ def login_view(request):
         }, status=status.HTTP_400_BAD_REQUEST)
     
     try:
-        # 비즈니스 로직을 서비스 레이어로 위임
         user = serializer.validated_data['user']
+        user_type = serializer.validated_data['user_type']
         refresh = RefreshToken.for_user(user)
+        
+        # 사용자 정보 직렬화
+        user_data = UserSerializer(user, context={'request': request}).data
         
         return Response({
             'success': True,
-            'message': '로그인 성공',
+            'message': f'{user_type} 로그인 성공',
+            'user_type': user_type,
             'tokens': {
                 'access': str(refresh.access_token),
                 'refresh': str(refresh)
             },
-            'user': AuthService.get_user_info(user)
-        }, status=status.HTTP_200_OK)
-        
-    except serializers.ValidationError as e:
-        return Response({
-            'success': False,
-            'message': str(e),
-        }, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def user_info_view(request):
-    """
-    현재 로그인된 사용자 정보 조회 API
-    GET /api/accounts/user/
-    """
-    try:
-        # 비즈니스 로직을 서비스 레이어로 위임
-        user_data = AuthService.get_user_info(request.user)
-        
-        return Response({
-            'success': True,
             'user': user_data
         }, status=status.HTTP_200_OK)
         
     except Exception as e:
         return Response({
             'success': False,
-            'message': f'사용자 정보 조회 실패: {str(e)}'
+            'message': f'로그인 실패: {str(e)}',
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -75,7 +69,7 @@ def user_info_view(request):
 @permission_classes([IsAuthenticated])
 def logout_view(request):
     """
-    사용자 로그아웃 API
+    통합 로그아웃 API
     POST /api/accounts/logout/
     
     Request Body:
@@ -86,22 +80,78 @@ def logout_view(request):
     try:
         refresh_token = request.data.get('refresh')
         
-        # 비즈니스 로직을 서비스 레이어로 위임
-        result = AuthService.logout_user(refresh_token)
+        if not refresh_token:
+            return Response({
+                'success': False,
+                'message': 'Refresh 토큰이 필요합니다.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # 토큰 블랙리스트에 추가
+        token = RefreshToken(refresh_token)
+        token.blacklist()
         
         return Response({
             'success': True,
-            'message': result['message']
+            'message': '로그아웃 성공'
         }, status=status.HTTP_200_OK)
         
-    except serializers.ValidationError as e:
+    except TokenError:
         return Response({
             'success': False,
-            'message': str(e)
+            'message': '유효하지 않은 토큰입니다.'
         }, status=status.HTTP_400_BAD_REQUEST)
         
     except Exception as e:
         return Response({
             'success': False,
             'message': f'로그아웃 실패: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def token_refresh_view(request):
+    """
+    JWT 토큰 갱신 API
+    POST /api/accounts/token/refresh/
+    """
+    serializer = TokenRefreshSerializer(data=request.data)
+    
+    if not serializer.is_valid():
+        return Response({
+            'success': False,
+            'message': '토큰 갱신 실패',
+            'errors': serializer.errors,
         }, status=status.HTTP_400_BAD_REQUEST)
+    
+    return Response({
+        'success': True,
+        'message': '토큰 갱신 성공',
+        'tokens': {
+            'access': serializer.validated_data['access'],
+            'refresh': serializer.validated_data['refresh']
+        }
+    }, status=status.HTTP_200_OK)
+
+# ==================== 디자이너 관련 ====================
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_profile_view(request):
+    """
+    사용자 프로필 조회 API
+    GET /api/accounts/profile/
+    """
+    try:
+        serializer = UserSerializer(request.user, context={'request': request})
+        
+        return Response({
+            'success': True,
+            'user': serializer.data
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'사용자 정보 조회 실패: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
