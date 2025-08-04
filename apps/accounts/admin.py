@@ -1,36 +1,45 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.utils.translation import gettext_lazy as _
 from .models import User
 
+
 @admin.register(User)
-class CustomUserAdmin(BaseUserAdmin):
-    # 목록 페이지에서 보여줄 필드들
-    list_display = ('user_id', 'name', 'user_type', 'is_active', 'is_staff', 'created_at')
-    list_filter = ('user_type', 'is_active', 'is_staff', 'created_at')
+class UserAdmin(BaseUserAdmin):
+    # 리스트에서 보여줄 필드
+    list_display = ('user_id', 'name', 'user_type', 'is_staff', 'is_active', 'created_at')
+    list_filter = ('user_type', 'is_staff', 'is_active', 'created_at')
     search_fields = ('user_id', 'name', 'contact')
     ordering = ('-created_at',)
 
-    # 상세 페이지 필드 구성
+    # 필드셋 구성 (관리자 상세 페이지에서 보여줄 항목)
     fieldsets = (
-        (None, {'fields': ('user_id', 'password')}),
-        ('개인정보', {'fields': ('name', 'user_type', 'contact', 'address')}),
-        ('권한', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
-        ('중요 일자', {'fields': ('last_login', 'created_at', 'updated_at')}),
+        (_('기본 정보'), {
+            'fields': ('user_id', 'password')
+        }),
+        (_('개인 정보'), {
+            'fields': ('name', 'user_type', 'contact', 'address')
+        }),
+        (_('권한 설정'), {
+            'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')
+        }),
+        (_('기록'), {
+            'fields': ('last_login', 'created_at', 'updated_at')
+        }),
     )
-    readonly_fields = ('created_at', 'updated_at')
 
-    # 새 사용자 추가 시 필드 구성
+    # 유저 생성 시 나오는 필드
     add_fieldsets = (
-        (None, {
+        (_('회원가입'), {
             'classes': ('wide',),
             'fields': ('user_id', 'name', 'user_type', 'contact', 'address', 'password1', 'password2'),
         }),
     )
 
-    # 검색 및 필터링을 위한 설정
+    readonly_fields = ('created_at', 'updated_at', 'last_login')
     filter_horizontal = ('groups', 'user_permissions')
     
-    # AbstractBaseUser를 사용하므로 기본 UserAdmin의 일부 설정을 오버라이드
+    # AbstractBaseUser 사용을 위한 설정
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
         is_superuser = request.user.is_superuser
