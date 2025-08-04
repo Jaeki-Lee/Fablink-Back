@@ -25,7 +25,8 @@ source venv/bin/activate  # Linux/Mac
 ### 스크립트 실행 안될시
 ```bash
 1. 스크립트 디렉토리로 이동후 모든 스크립트 들의 줄 끝의 r 문자 제거 및 권한 부여
-/scripts for file in *.sh; do sed -i 's/\r$//' "$file"; chmod +x "$file"; done
+cd /scripts
+for file in *.sh; do sed -i 's/\r$//' "$file"; chmod +x "$file"; done
 
 2.fix_scripts 실행
 ```
