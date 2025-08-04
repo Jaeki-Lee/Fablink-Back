@@ -118,9 +118,40 @@ create_django_app() {
     log_step "Django 앱을 생성합니다: $app_name"
     
     # 앱 생성
-    python manage.py startapp $app_name apps/$app_name
+    if [ ! -d "apps" ]; then
+        log_info "apps 디렉토리를 생성합니다..."
+        mkdir -p apps
+    fi
     
-    log_success "Django 앱 생성 완료"
+    # 앱 디렉토리가 이미 존재하는지 확인
+    if [ -d "apps/$app_name" ]; then
+        log_warning "앱 디렉토리가 이미 존재합니다: apps/$app_name"
+        read -p "기존 디렉토리를 삭제하고 새로 생성하시겠습니까? (y/N): " confirm
+        if [[ $confirm =~ ^[Yy]$ ]]; then
+            log_info "기존 디렉토리를 삭제합니다..."
+            rm -rf "apps/$app_name"
+        else
+            log_error "앱 생성을 취소합니다."
+            exit 1
+        fi
+    fi
+
+
+    if python manage.py startapp $app_name apps/$app_name 2>/dev/null; then
+        log_success "Django 앱 생성 완료 (방법 1)"
+    else
+        log_info "방법 1 실패, 대안 방법으로 앱을 생성합니다..."
+        
+        # 대안: 임시로 앱을 생성한 후 이동
+        if python manage.py startapp $app_name 2>/dev/null; then
+            log_info "임시 앱 생성 후 apps 디렉토리로 이동합니다..."
+            mv $app_name apps/
+            log_success "Django 앱 생성 완료 (방법 2)"
+        else
+            log_error "Django 앱 생성에 실패했습니다."
+            exit 1
+        fi
+    fi
 }
 
 # 기본 파일들 생성
