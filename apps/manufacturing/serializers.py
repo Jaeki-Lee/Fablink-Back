@@ -135,7 +135,7 @@ class OrderSerializer(serializers.ModelSerializer):
             'id', 'order_id', 'product', 'product_info', 'status', 
             'quantity', 'unit_price', 'total_price', 'receipt_path', 
             'receipt_url', 'notes', 'customer_name', 'customer_contact', 
-            'customer_email', 'shipping_address', 'shipping_method', 
+            'shipping_address', 'shipping_method', 
             'shipping_cost', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'order_id', 'total_price', 'created_at', 'updated_at']
@@ -157,7 +157,7 @@ class OrderCreateSerializer(serializers.ModelSerializer):
         model = Order
         fields = [
             'product', 'quantity', 'unit_price', 'receipt_path', 'notes',
-            'customer_name', 'customer_contact', 'customer_email',
+            'customer_name', 'customer_contact',
             'shipping_address', 'shipping_method', 'shipping_cost'
         ]
     
