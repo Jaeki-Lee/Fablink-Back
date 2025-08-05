@@ -131,7 +131,6 @@ class Order(models.Model):
     # 고객 정보 (Product의 designer와 다를 수 있음)
     customer_name = models.CharField(max_length=100, null=True, blank=True, verbose_name="고객명")
     customer_contact = models.CharField(max_length=50, null=True, blank=True, verbose_name="고객 연락처")
-    customer_email = models.EmailField(null=True, blank=True, verbose_name="고객 이메일")
     
     # 배송 정보
     shipping_address = models.TextField(null=True, blank=True, verbose_name="배송 주소")

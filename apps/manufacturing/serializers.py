@@ -105,12 +105,14 @@ class ProductListSerializer(serializers.ModelSerializer):
     """제품 목록용 간단한 시리얼라이저"""
     designer_name = serializers.CharField(source='designer.name', read_only=True)
     image_url = serializers.SerializerMethodField()
+    work_sheet_url = serializers.SerializerMethodField()
     
     class Meta:
         model = Product
         fields = [
-            'id', 'name', 'season', 'target', 'concept', 
-            'image_path', 'image_url', 'quantity', 'due_date',
+            'id', 'name', 'season', 'target', 'concept', 'detail',
+            'image_path', 'image_url', 'quantity', 'due_date', 'fabric',
+            'material', 'memo', 'work_sheet_path', 'work_sheet_url',
             'designer', 'designer_name', 'created_at'
         ]
     
@@ -121,6 +123,15 @@ class ProductListSerializer(serializers.ModelSerializer):
             if request:
                 return request.build_absolute_uri(obj.image_path.url)
             return obj.image_path.url
+        return None
+    
+    def get_work_sheet_url(self, obj):
+        """작업지시서 URL 반환"""
+        if obj.work_sheet_path:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.work_sheet_path.url)
+            return obj.work_sheet_path.url
         return None
 
 
@@ -135,7 +146,7 @@ class OrderSerializer(serializers.ModelSerializer):
             'id', 'order_id', 'product', 'product_info', 'status', 
             'quantity', 'unit_price', 'total_price', 'receipt_path', 
             'receipt_url', 'notes', 'customer_name', 'customer_contact', 
-            'customer_email', 'shipping_address', 'shipping_method', 
+            'shipping_address', 'shipping_method', 
             'shipping_cost', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'order_id', 'total_price', 'created_at', 'updated_at']
@@ -157,7 +168,7 @@ class OrderCreateSerializer(serializers.ModelSerializer):
         model = Order
         fields = [
             'product', 'quantity', 'unit_price', 'receipt_path', 'notes',
-            'customer_name', 'customer_contact', 'customer_email',
+            'customer_name', 'customer_contact',
             'shipping_address', 'shipping_method', 'shipping_cost'
         ]
     
