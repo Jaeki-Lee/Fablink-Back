@@ -6,13 +6,14 @@ class ProductSerializer(serializers.ModelSerializer):
     """제품 시리얼라이저"""
     designer_info = UserSerializer(source='designer', read_only=True)
     image_url = serializers.SerializerMethodField()
+    composite_image_url = serializers.SerializerMethodField()
     work_sheet_url = serializers.SerializerMethodField()
     
     class Meta:
         model = Product
         fields = [
             'id', 'name', 'season', 'target', 'concept', 'detail', 
-            'image_path', 'image_url', 'size', 'quantity', 'fabric', 
+            'image_path', 'image_url', 'composite_image', 'composite_image_url', 'size', 'quantity', 'fabric', 
             'material', 'due_date', 'memo', 'work_sheet_path', 'work_sheet_url',
             'designer', 'designer_info', 'created_at', 'updated_at'
         ]
@@ -45,12 +46,13 @@ class ProductCreateSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'name', 'season', 'target', 'target_customer', 'concept', 'detail', 
-            'image_path', 'size', 'quantity', 'fabric', 
+            'image_path', 'composite_image', 'size', 'quantity', 'fabric', 
             'material', 'due_date', 'memo', 'work_sheet_path'
         ]
         read_only_fields = ['id']
         extra_kwargs = {
             'image_path': {'required': False},
+            'composite_image': {'required': False},
             'target': {'required': False}
         }
     
