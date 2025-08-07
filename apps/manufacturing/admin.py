@@ -13,7 +13,7 @@ class ProductAdmin(admin.ModelAdmin):
             'fields': ('name', 'designer', 'season', 'target', 'concept')
         }),
         ('상세 정보', {
-            'fields': ('detail', 'image_path', 'size', 'quantity')
+            'fields': ('detail', 'image_path', 'composite_image', 'size', 'quantity')
         }),
         ('소재 정보', {
             'fields': ('fabric', 'material')

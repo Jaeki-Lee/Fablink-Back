@@ -38,6 +38,7 @@ class Product(models.Model):
     target = models.CharField(max_length=20, choices=TARGET_CHOICES, verbose_name="타겟 고객층")
     concept = models.TextField(verbose_name="컨셉 설명")
     image_path = models.ImageField(upload_to='design_image/', null=True, blank=True, verbose_name="디자인 이미지")
+    composite_image = models.ImageField(upload_to='composite_images/', null=True, blank=True, verbose_name="합성 디자인 미리보기")
     detail = models.TextField(blank=True, null=True, verbose_name="포인트 부위 설명")
     size = models.CharField(max_length=20, null=True, blank=True, verbose_name="사이즈")
     quantity = models.PositiveIntegerField(
