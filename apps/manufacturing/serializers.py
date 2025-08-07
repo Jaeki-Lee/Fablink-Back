@@ -5,6 +5,7 @@ from apps.accounts.serializers import UserSerializer
 class ProductSerializer(serializers.ModelSerializer):
     """제품 시리얼라이저"""
     designer_info = UserSerializer(source='designer', read_only=True)
+    designer_contact = serializers.CharField(source='designer.contact', read_only=True)
     image_url = serializers.SerializerMethodField()
     composite_image_url = serializers.SerializerMethodField()
     work_sheet_url = serializers.SerializerMethodField()
@@ -15,7 +16,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'id', 'name', 'season', 'target', 'concept', 'detail', 
             'image_path', 'image_url', 'composite_image', 'composite_image_url', 'size', 'quantity', 'fabric', 
             'material', 'due_date', 'memo', 'work_sheet_path', 'work_sheet_url',
-            'designer', 'designer_info', 'created_at', 'updated_at'
+            'designer', 'designer_info', 'designer_contact', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'designer', 'created_at', 'updated_at']
     
@@ -26,6 +27,15 @@ class ProductSerializer(serializers.ModelSerializer):
             if request:
                 return request.build_absolute_uri(obj.image_path.url)
             return obj.image_path.url
+        return None
+    
+    def get_composite_image_url(self, obj):
+        """합성 이미지 URL 반환"""
+        if obj.composite_image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.composite_image.url)
+            return obj.composite_image.url
         return None
     
     def get_work_sheet_url(self, obj):
