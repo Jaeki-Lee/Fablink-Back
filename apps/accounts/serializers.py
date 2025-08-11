@@ -1,39 +1,7 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
-from .models import User
-
-class LoginSerializer(serializers.Serializer):
-    """통합 로그인 Serializer (Designer와 Factory 모두 지원)"""
-    user_id = serializers.CharField(max_length=50)
-    password = serializers.CharField(write_only=True)
-    user_type = serializers.ChoiceField(choices=[('designer', '디자이너'), ('factory', '공장주')], required=True)
-
-    def validate(self, attrs):
-        user_id = attrs.get('user_id')
-        password = attrs.get('password')
-        user_type = attrs.get('user_type')
-
-        if not user_id or not password:
-            raise serializers.ValidationError('사용자 ID와 비밀번호를 모두 입력해주세요.')
-
-        try:
-            user = User.objects.get(user_id=user_id, user_type=user_type)
-            
-            if user.check_password(password):
-                # 계정 활성화 상태 확인
-                if not user.is_active:
-                    raise serializers.ValidationError("비활성화된 계정입니다. 관리자에게 문의하세요.")
-                
-                attrs['user'] = user
-                attrs['user_type'] = user_type
-                return attrs
-            else:
-                raise serializers.ValidationError("비밀번호가 올바르지 않습니다.")
-                
-        except User.DoesNotExist:
-            raise serializers.ValidationError("존재하지 않는 사용자입니다.")
-
+from .models import User, Designer, Factory
 
 class TokenRefreshSerializer(serializers.Serializer):
     """JWT 토큰 갱신 Serializer"""
@@ -57,9 +25,94 @@ class TokenRefreshSerializer(serializers.Serializer):
 
 class UserSerializer(serializers.ModelSerializer):
     """사용자 정보 조회/수정 Serializer"""
+    user_type = serializers.ReadOnlyField()
     
     class Meta:
         model = User
         fields = ['id', 'user_id', 'name', 'user_type', 'contact', 'address', 
                  'is_active', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'user_id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'user_id', 'user_type', 'created_at', 'updated_at']
+
+
+class DesignerSerializer(serializers.ModelSerializer):
+    """디자이너 Serializer"""
+    user = UserSerializer(read_only=True)
+    
+    class Meta:
+        model = Designer
+        fields = ['id', 'user', 'portfolio_url', 'specialization', 'experience_years', 
+                 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class FactorySerializer(serializers.ModelSerializer):
+    """공장 Serializer"""
+    user = UserSerializer(read_only=True)
+    
+    class Meta:
+        model = Factory
+        fields = ['id', 'user', 'company_name', 'business_license', 'production_capacity', 
+                 'specialties', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class DesignerLoginSerializer(serializers.Serializer):
+    """디자이너 로그인 Serializer"""
+    user_id = serializers.CharField(max_length=50)
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        user_id = attrs.get('user_id')
+        password = attrs.get('password')
+
+        if not user_id or not password:
+            raise serializers.ValidationError('사용자 ID와 비밀번호를 모두 입력해주세요.')
+
+        try:
+            user = User.objects.get(user_id=user_id)
+            
+            if not user.check_password(password):
+                raise serializers.ValidationError("비밀번호가 올바르지 않습니다.")
+            
+            if not user.is_active:
+                raise serializers.ValidationError("비활성화된 계정입니다.")
+            
+            if not hasattr(user, 'designer'):
+                raise serializers.ValidationError("디자이너 계정이 아닙니다.")
+            
+            attrs['user'] = user
+            return attrs
+                
+        except User.DoesNotExist:
+            raise serializers.ValidationError("존재하지 않는 사용자입니다.")
+
+
+class FactoryLoginSerializer(serializers.Serializer):
+    """공장 로그인 Serializer"""
+    user_id = serializers.CharField(max_length=50)
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        user_id = attrs.get('user_id')
+        password = attrs.get('password')
+
+        if not user_id or not password:
+            raise serializers.ValidationError('사용자 ID와 비밀번호를 모두 입력해주세요.')
+
+        try:
+            user = User.objects.get(user_id=user_id)
+            
+            if not user.check_password(password):
+                raise serializers.ValidationError("비밀번호가 올바르지 않습니다.")
+            
+            if not user.is_active:
+                raise serializers.ValidationError("비활성화된 계정입니다.")
+            
+            if not hasattr(user, 'factory'):
+                raise serializers.ValidationError("공장 계정이 아닙니다.")
+            
+            attrs['user'] = user
+            return attrs
+                
+        except User.DoesNotExist:
+            raise serializers.ValidationError("존재하지 않는 사용자입니다.")
