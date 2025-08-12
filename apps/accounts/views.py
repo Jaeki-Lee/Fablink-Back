@@ -21,7 +21,7 @@ from .models import User
 # ==================== 로그아웃 ====================
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def logout_view(request):
     """
     통합 로그아웃 API
@@ -33,28 +33,11 @@ def logout_view(request):
     }
     """
     try:
-        refresh_token = request.data.get('refresh')
-        
-        if not refresh_token:
-            return Response({
-                'success': False,
-                'message': 'Refresh 토큰이 필요합니다.'
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        # 토큰 블랙리스트에 추가
-        token = RefreshToken(refresh_token)
-        token.blacklist()
-        
+        # 커스텀 JWT 토큰은 블랙리스트 처리 없이 단순 성공 응답
         return Response({
             'success': True,
             'message': '로그아웃 성공'
         }, status=status.HTTP_200_OK)
-        
-    except TokenError:
-        return Response({
-            'success': False,
-            'message': '유효하지 않은 토큰입니다.'
-        }, status=status.HTTP_400_BAD_REQUEST)
         
     except Exception as e:
         return Response({
