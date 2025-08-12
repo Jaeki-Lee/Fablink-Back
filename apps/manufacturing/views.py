@@ -18,25 +18,25 @@ class ProductViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         # 디자이너는 자신의 제품만, 공장주는 모든 제품 조회 가능
-        if self.request.user.user_type == 'designer':
-            return Product.objects.filter(designer=self.request.user)
+        if hasattr(self.request.user, 'designer'):
+            return Product.objects.filter(designer=self.request.user.designer)
         return Product.objects.all()
 
     def perform_create(self, serializer):
         # 디자이너만 제품 생성 가능
-        if self.request.user.user_type != 'designer':
+        if not hasattr(self.request.user, 'designer'):
             return Response(
                 {'error': '디자이너만 제품을 생성할 수 있습니다.'}, 
                 status=status.HTTP_403_FORBIDDEN
             )
-        serializer.save(designer=self.request.user)
+        serializer.save(designer=self.request.user.designer)
     
     def create(self, request, *args, **kwargs):
         logger.info(f"Product create request from user: {request.user}")
         logger.info(f"Request data: {request.data}")
         
         # 디자이너 권한 확인
-        if not hasattr(request.user, 'user_type') or request.user.user_type != 'designer':
+        if not hasattr(request.user, 'designer'):
             logger.warning(f"Non-designer user attempted to create product: {request.user}")
             return Response(
                 {'error': '디자이너만 제품을 생성할 수 있습니다.'}, 
@@ -74,7 +74,7 @@ class OrderViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         # 디자이너는 자신의 제품에 대한 주문만 조회 가능
-        if self.request.user.user_type == 'designer':
-            return Order.objects.filter(product__designer=self.request.user)
+        if hasattr(self.request.user, 'designer'):
+            return Order.objects.filter(product__designer=self.request.user.designer)
         # 공장주는 모든 주문 조회 가능
         return Order.objects.all()

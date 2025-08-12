@@ -131,7 +131,8 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'apps.accounts.authentication.CustomJWTAuthentication',
+        'apps.accounts.authentication.DesignerAuthentication',
+        'apps.accounts.authentication.FactoryAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
