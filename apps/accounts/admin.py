@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
+from django import forms
 from .models import User, Designer, Factory
 
 
@@ -65,27 +66,33 @@ class UserAdmin(BaseUserAdmin):
 
 @admin.register(Designer)
 class DesignerAdmin(admin.ModelAdmin):
-    list_display = ('get_user_id', 'get_name', 'specialization', 'experience_years', 'created_at')
-    list_filter = ('experience_years', 'created_at')
-    search_fields = ('user__user_id', 'user__name', 'specialization')
-    ordering = ('-created_at',)
+    list_display = ('user_id', 'name', 'contact', 'address')
+    search_fields = ('user_id', 'name', 'contact')
+    ordering = ('id',)
     
-    def get_user_id(self, obj):
-        return obj.user.user_id
-    get_user_id.short_description = '사용자 ID'
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        form.base_fields['password'].widget = forms.PasswordInput()
+        return form
     
-    def get_name(self, obj):
-        return obj.user.name
-    get_name.short_description = '이름'
+    def save_model(self, request, obj, form, change):
+        if 'password' in form.changed_data:
+            obj.set_password(form.cleaned_data['password'])
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(Factory)
 class FactoryAdmin(admin.ModelAdmin):
-    list_display = ('get_user_id', 'company_name', 'production_capacity', 'created_at')
-    list_filter = ('production_capacity', 'created_at')
-    search_fields = ('user__user_id', 'company_name', 'business_license')
-    ordering = ('-created_at',)
+    list_display = ('user_id', 'name', 'contact', 'address')
+    search_fields = ('user_id', 'name', 'contact')
+    ordering = ('id',)
     
-    def get_user_id(self, obj):
-        return obj.user.user_id
-    get_user_id.short_description = '사용자 ID'
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        form.base_fields['password'].widget = forms.PasswordInput()
+        return form
+    
+    def save_model(self, request, obj, form, change):
+        if 'password' in form.changed_data:
+            obj.set_password(form.cleaned_data['password'])
+        super().save_model(request, obj, form, change)

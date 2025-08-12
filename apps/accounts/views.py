@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
+from .tokens import DesignerToken, FactoryToken
 
 from .serializers import (
     UserSerializer,
@@ -102,23 +103,9 @@ def user_profile_view(request):
         
         response_data = {
             'success': True,
-            'user': user_serializer.data
+            'user': user_serializer.data,
+            'user_type': None
         }
-        
-        # Designer 정보 추가
-        if hasattr(user, 'designer'):
-            designer_serializer = DesignerSerializer(user.designer, context={'request': request})
-            response_data['designer'] = designer_serializer.data
-            response_data['user_type'] = 'designer'
-        
-        # Factory 정보 추가
-        elif hasattr(user, 'factory'):
-            factory_serializer = FactorySerializer(user.factory, context={'request': request})
-            response_data['factory'] = factory_serializer.data
-            response_data['user_type'] = 'factory'
-        
-        else:
-            response_data['user_type'] = None
         
         return Response(response_data, status=status.HTTP_200_OK)
         
@@ -154,20 +141,19 @@ def designer_login_view(request):
         }, status=status.HTTP_400_BAD_REQUEST)
     
     try:
-        user = serializer.validated_data['user']
-        refresh = RefreshToken.for_user(user)
+        designer = serializer.validated_data['designer']
+        
+        # 커스텀 JWT 토큰 생성
+        tokens = DesignerToken.for_designer(designer)
         
         # 디자이너 정보 직렬화
-        designer_data = DesignerSerializer(user.designer, context={'request': request}).data
+        designer_data = DesignerSerializer(designer, context={'request': request}).data
         
         return Response({
             'success': True,
             'message': '디자이너 로그인 성공',
             'user_type': 'designer',
-            'tokens': {
-                'access': str(refresh.access_token),
-                'refresh': str(refresh)
-            },
+            'tokens': tokens,
             'designer': designer_data
         }, status=status.HTTP_200_OK)
         
@@ -203,20 +189,19 @@ def factory_login_view(request):
         }, status=status.HTTP_400_BAD_REQUEST)
     
     try:
-        user = serializer.validated_data['user']
-        refresh = RefreshToken.for_user(user)
+        factory = serializer.validated_data['factory']
+        
+        # 커스텀 JWT 토큰 생성
+        tokens = FactoryToken.for_factory(factory)
         
         # 공장 정보 직렬화
-        factory_data = FactorySerializer(user.factory, context={'request': request}).data
+        factory_data = FactorySerializer(factory, context={'request': request}).data
         
         return Response({
             'success': True,
             'message': '공장 로그인 성공',
             'user_type': 'factory',
-            'tokens': {
-                'access': str(refresh.access_token),
-                'refresh': str(refresh)
-            },
+            'tokens': tokens,
             'factory': factory_data
         }, status=status.HTTP_200_OK)
         

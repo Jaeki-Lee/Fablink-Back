@@ -36,24 +36,20 @@ class UserSerializer(serializers.ModelSerializer):
 
 class DesignerSerializer(serializers.ModelSerializer):
     """디자이너 Serializer"""
-    user = UserSerializer(read_only=True)
     
     class Meta:
         model = Designer
-        fields = ['id', 'user', 'portfolio_url', 'specialization', 'experience_years', 
-                 'created_at', 'updated_at']
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        fields = ['id', 'user_id', 'name', 'profile_image', 'contact', 'address']
+        read_only_fields = ['id']
 
 
 class FactorySerializer(serializers.ModelSerializer):
     """공장 Serializer"""
-    user = UserSerializer(read_only=True)
     
     class Meta:
         model = Factory
-        fields = ['id', 'user', 'company_name', 'business_license', 'production_capacity', 
-                 'specialties', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        fields = ['id', 'user_id', 'name', 'profile_image', 'contact', 'address']
+        read_only_fields = ['id']
 
 
 class DesignerLoginSerializer(serializers.Serializer):
@@ -69,22 +65,16 @@ class DesignerLoginSerializer(serializers.Serializer):
             raise serializers.ValidationError('사용자 ID와 비밀번호를 모두 입력해주세요.')
 
         try:
-            user = User.objects.get(user_id=user_id)
+            designer = Designer.objects.get(user_id=user_id)
             
-            if not user.check_password(password):
+            if not designer.check_password(password):
                 raise serializers.ValidationError("비밀번호가 올바르지 않습니다.")
             
-            if not user.is_active:
-                raise serializers.ValidationError("비활성화된 계정입니다.")
-            
-            if not hasattr(user, 'designer'):
-                raise serializers.ValidationError("디자이너 계정이 아닙니다.")
-            
-            attrs['user'] = user
+            attrs['designer'] = designer
             return attrs
                 
-        except User.DoesNotExist:
-            raise serializers.ValidationError("존재하지 않는 사용자입니다.")
+        except Designer.DoesNotExist:
+            raise serializers.ValidationError("존재하지 않는 디자이너입니다.")
 
 
 class FactoryLoginSerializer(serializers.Serializer):
@@ -100,19 +90,13 @@ class FactoryLoginSerializer(serializers.Serializer):
             raise serializers.ValidationError('사용자 ID와 비밀번호를 모두 입력해주세요.')
 
         try:
-            user = User.objects.get(user_id=user_id)
+            factory = Factory.objects.get(user_id=user_id)
             
-            if not user.check_password(password):
+            if not factory.check_password(password):
                 raise serializers.ValidationError("비밀번호가 올바르지 않습니다.")
             
-            if not user.is_active:
-                raise serializers.ValidationError("비활성화된 계정입니다.")
-            
-            if not hasattr(user, 'factory'):
-                raise serializers.ValidationError("공장 계정이 아닙니다.")
-            
-            attrs['user'] = user
+            attrs['factory'] = factory
             return attrs
                 
-        except User.DoesNotExist:
-            raise serializers.ValidationError("존재하지 않는 사용자입니다.")
+        except Factory.DoesNotExist:
+            raise serializers.ValidationError("존재하지 않는 공장입니다.")
