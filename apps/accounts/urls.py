@@ -14,4 +14,6 @@ urlpatterns = [
     
     # ==================== 사용자 프로필 ====================
     path('profile/', views.user_profile_view, name='user_profile'),
+    # 호환: 프론트에서 /user_info/ 호출 시 404 방지
+    path('user_info/', views.user_profile_view, name='user_info'),
 ]

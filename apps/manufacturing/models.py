@@ -75,7 +75,8 @@ class Product(models.Model):
         ordering = ['-created_at']
     
     def __str__(self):
-        return f"{self.name} - {self.designer.user.name}"
+        # Designer 모델은 User FK가 없으므로 직접 name 사용
+        return f"{self.name} - {self.designer.name}"
 
 
 class Order(models.Model):

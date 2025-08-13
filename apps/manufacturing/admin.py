@@ -5,7 +5,8 @@ from .models import Product, Order, RequestOrder, BidFactory
 class ProductAdmin(admin.ModelAdmin):
     list_display = ('name', 'designer', 'season', 'target', 'created_at')
     list_filter = ('season', 'target', 'created_at')
-    search_fields = ('name', 'designer__user__name', 'designer__user__user_id')
+    # Designer 모델은 User FK가 없으므로 designer의 name/user_id로 직접 검색
+    search_fields = ('name', 'designer__name', 'designer__user_id')
     readonly_fields = ('created_at', 'updated_at')
     
     fieldsets = (
@@ -29,10 +30,11 @@ class ProductAdmin(admin.ModelAdmin):
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     list_display = ('order_id', 'product', 'get_designer_name')
-    search_fields = ('order_id', 'product__name', 'product__designer__user__name')
+    search_fields = ('order_id', 'product__name', 'product__designer__name')
     
     def get_designer_name(self, obj):
-        return obj.product.designer.user.name
+        # Designer 모델은 User FK가 없으므로 직접 name 접근
+        return obj.product.designer.name
     get_designer_name.short_description = '디자이너'
 
 

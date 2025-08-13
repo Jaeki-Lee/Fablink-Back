@@ -103,7 +103,8 @@ class ProductCreateSerializer(serializers.ModelSerializer):
 
 class ProductListSerializer(serializers.ModelSerializer):
     """제품 목록용 간단한 시리얼라이저"""
-    designer_name = serializers.CharField(source='designer.user.name', read_only=True)
+    # Designer는 User FK가 없으므로 직접 name 사용
+    designer_name = serializers.CharField(source='designer.name', read_only=True)
     image_url = serializers.SerializerMethodField()
     
     class Meta:

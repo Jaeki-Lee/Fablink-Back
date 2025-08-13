@@ -1,6 +1,8 @@
 from rest_framework import serializers
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.exceptions import TokenError
+from django.conf import settings
+import jwt
+from datetime import datetime, timedelta
+import uuid
 from .models import User, Designer, Factory
 
 class TokenRefreshSerializer(serializers.Serializer):
@@ -14,12 +16,40 @@ class TokenRefreshSerializer(serializers.Serializer):
             raise serializers.ValidationError('Refresh 토큰이 필요합니다.')
         
         try:
-            # 토큰 유효성 검사 및 새 액세스 토큰 생성
-            refresh = RefreshToken(refresh_token)
-            attrs['access'] = str(refresh.access_token)
-            attrs['refresh'] = str(refresh)
+            # 커스텀 refresh 토큰 디코드 및 유효성 확인
+            payload = jwt.decode(refresh_token, settings.SECRET_KEY, algorithms=['HS256'])
+            if payload.get('token_type') != 'refresh':
+                raise serializers.ValidationError('리프레시 토큰이 아닙니다.')
+
+            # 사용자 클레임 추출
+            user_claims = {k: payload.get(k) for k in ['designer_id', 'factory_id', 'user_id', 'name'] if payload.get(k) is not None}
+            user_type = 'designer' if payload.get('designer_id') else ('factory' if payload.get('factory_id') else None)
+
+            # 새 액세스 토큰
+            access_payload = {
+                **user_claims,
+                'user_type': user_type,
+                'exp': datetime.utcnow() + timedelta(hours=24),
+                'iat': datetime.utcnow(),
+            }
+            new_access = jwt.encode(access_payload, settings.SECRET_KEY, algorithm='HS256')
+
+            # 새 리프레시 토큰
+            refresh_payload = {
+                **user_claims,
+                'token_type': 'refresh',
+                'jti': str(uuid.uuid4()),
+                'exp': datetime.utcnow() + timedelta(days=7),
+                'iat': datetime.utcnow(),
+            }
+            new_refresh = jwt.encode(refresh_payload, settings.SECRET_KEY, algorithm='HS256')
+
+            attrs['access'] = new_access
+            attrs['refresh'] = new_refresh
             return attrs
-        except TokenError as e:
+        except jwt.ExpiredSignatureError:
+            raise serializers.ValidationError('리프레시 토큰이 만료되었습니다.')
+        except jwt.InvalidTokenError as e:
             raise serializers.ValidationError(f'유효하지 않은 토큰입니다: {str(e)}')
 
 

@@ -1,7 +1,7 @@
-from rest_framework_simplejwt.tokens import RefreshToken
 from django.conf import settings
 import jwt
 from datetime import datetime, timedelta
+import uuid
 
 
 class DesignerToken:
@@ -26,6 +26,7 @@ class DesignerToken:
             'designer_id': designer.id,
             'user_id': designer.user_id,
             'token_type': 'refresh',
+            'jti': str(uuid.uuid4()),
             'exp': datetime.utcnow() + timedelta(days=7),
             'iat': datetime.utcnow(),
         }
@@ -71,6 +72,7 @@ class FactoryToken:
             'factory_id': factory.id,
             'user_id': factory.user_id,
             'token_type': 'refresh',
+            'jti': str(uuid.uuid4()),
             'exp': datetime.utcnow() + timedelta(days=7),
             'iat': datetime.utcnow(),
         }

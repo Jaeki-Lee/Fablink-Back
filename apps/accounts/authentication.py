@@ -1,8 +1,34 @@
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
-from django.contrib.auth.models import AnonymousUser
 from .tokens import DesignerToken, FactoryToken
 from .models import Designer, Factory
+
+
+class _BaseUserProxy:
+    """DRF 권한 체크 호환을 위한 사용자 프록시 베이스."""
+    is_authenticated = True
+    is_active = True
+    is_anonymous = False
+
+    def __init__(self, obj):
+        self._obj = obj
+
+    def __str__(self):
+        return str(self._obj)
+
+
+class DesignerUserProxy(_BaseUserProxy):
+    def __init__(self, designer: Designer):
+        super().__init__(designer)
+        # 뷰 로직 호환: request.user.designer 로 접근 가능하게 유지
+        self.designer = designer
+
+
+class FactoryUserProxy(_BaseUserProxy):
+    def __init__(self, factory: Factory):
+        super().__init__(factory)
+        # 뷰 로직 호환: request.user.factory 로 접근 가능하게 유지
+        self.factory = factory
 
 
 class DesignerAuthentication(BaseAuthentication):
@@ -23,9 +49,8 @@ class DesignerAuthentication(BaseAuthentication):
                 return None
                 
             designer = Designer.objects.get(id=payload['designer_id'])
-            
-            # AnonymousUser 대신 Designer 객체를 user로 사용
-            return (designer, token)
+            # DRF 권한 체크 및 뷰 로직 호환을 위한 프록시 반환
+            return (DesignerUserProxy(designer), token)
             
         except Designer.DoesNotExist:
             raise AuthenticationFailed('Designer not found')
@@ -51,9 +76,8 @@ class FactoryAuthentication(BaseAuthentication):
                 return None
                 
             factory = Factory.objects.get(id=payload['factory_id'])
-            
-            # AnonymousUser 대신 Factory 객체를 user로 사용
-            return (factory, token)
+            # DRF 권한 체크 및 뷰 로직 호환을 위한 프록시 반환
+            return (FactoryUserProxy(factory), token)
             
         except Factory.DoesNotExist:
             raise AuthenticationFailed('Factory not found')

@@ -31,7 +31,8 @@ static/
 # Environment variables
 .env
 .env.local
-.env.production
+.env.dev
+.env.prod
 
 # IDE
 .vscode/
