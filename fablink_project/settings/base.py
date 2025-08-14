@@ -115,6 +115,14 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# MongoDB settings (env override)
+MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb://localhost:27017')
+MONGODB_DB = os.getenv('MONGODB_DB', 'fablink')
+MONGODB_COLLECTIONS = {
+    'designer_orders': os.getenv('MONGODB_COLLECTION_DESIGNER', 'designer_orders'),
+    'factory_orders': os.getenv('MONGODB_COLLECTION_FACTORY', 'factory_orders'),
+}
+
 # Django REST Framework 설정
 REST_FRAMEWORK = {
     # 카멜케이스 컨버터
