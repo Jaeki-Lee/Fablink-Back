@@ -76,6 +76,7 @@ create_env_file() {
             -e 's/DB_HOST=.*/DB_HOST=localhost/' \
             -e 's/DB_PORT=.*/DB_PORT=5432/' \
             -e 's/USE_DYNAMODB=.*/USE_DYNAMODB=False/' \
+            -e 's/DYNAMODB_TABLE_PREFIX=.*/DYNAMODB_TABLE_PREFIX=fablink_local/' \
             -e 's/CORS_ALLOWED_ORIGINS=.*/CORS_ALLOWED_ORIGINS=http:\/\/localhost:3000,http:\/\/127.0.0.1:3000/' \
             -e 's/JWT_SECRET_KEY=.*/JWT_SECRET_KEY=local-jwt-secret-key/' \
             -e 's/USE_S3=.*/USE_S3=False/' \
@@ -99,7 +100,7 @@ create_env_file() {
             -e 's/DJANGO_ENV=.*/DJANGO_ENV=dev/' \
             -e 's/SECRET_KEY=.*/SECRET_KEY=dev-secret-key-change-in-production/' \
             -e 's/DEBUG=.*/DEBUG=True/' \
-            -e 's/ALLOWED_HOSTS=.*/ALLOWED_HOSTS=dev-api.fablink.com,localhost,.amazonaws.com/' \
+            -e 's/ALLOWED_HOSTS=.*/ALLOWED_HOSTS=dev-api.fablink.com,.amazonaws.com/' \
             -e 's/DB_NAME=.*/DB_NAME=fablink_dev_db/' \
             -e 's/DB_USER=.*/DB_USER=fablink_dev_user/' \
             -e 's/DB_PASSWORD=.*/DB_PASSWORD=dev-aurora-password/' \
@@ -107,8 +108,6 @@ create_env_file() {
             -e 's/DB_PORT=.*/DB_PORT=5432/' \
             -e 's/USE_DYNAMODB=.*/USE_DYNAMODB=True/' \
             -e 's/DYNAMODB_REGION=.*/DYNAMODB_REGION=ap-northeast-2/' \
-            -e 's/DYNAMODB_ACCESS_KEY_ID=.*/DYNAMODB_ACCESS_KEY_ID=dev-dynamodb-access-key/' \
-            -e 's/DYNAMODB_SECRET_ACCESS_KEY=.*/DYNAMODB_SECRET_ACCESS_KEY=dev-dynamodb-secret-key/' \
             -e 's/DYNAMODB_TABLE_PREFIX=.*/DYNAMODB_TABLE_PREFIX=fablink_dev/' \
             -e 's/CORS_ALLOWED_ORIGINS=.*/CORS_ALLOWED_ORIGINS=https:\/\/dev.fablink.com/' \
             -e 's/JWT_SECRET_KEY=.*/JWT_SECRET_KEY=dev-jwt-secret-key/' \
@@ -120,18 +119,14 @@ create_env_file() {
             -e 's/ENABLE_DEBUG_TOOLBAR=.*/ENABLE_DEBUG_TOOLBAR=True/' \
             -e 's/ENABLE_EXPERIMENTAL_FEATURES=.*/ENABLE_EXPERIMENTAL_FEATURES=True/' \
             -e 's/MOCK_EXTERNAL_APIS=.*/MOCK_EXTERNAL_APIS=False/' \
-            -e 's/SENTRY_ENVIRONMENT=.*/SENTRY_ENVIRONMENT=development/' \
-            -e 's|MONGODB_URI=.*|MONGODB_URI=mongodb://localhost:9000|' \
-            -e 's/MONGODB_DB=.*/MONGODB_DB=fablink/' \
-            -e 's/MONGODB_COLLECTION_DESIGNER=.*/MONGODB_COLLECTION_DESIGNER=designer_orders/' \
-            -e 's/MONGODB_COLLECTION_FACTORY=.*/MONGODB_COLLECTION_FACTORY=factory_orders/' )
+            -e 's/SENTRY_ENVIRONMENT=.*/SENTRY_ENVIRONMENT=development/')
             
     elif [ "$env_type" = "prod" ]; then
         envContent=$(echo "$envContent" | sed \
             -e 's/DJANGO_ENV=.*/DJANGO_ENV=prod/' \
             -e 's/SECRET_KEY=.*/SECRET_KEY=super-secret-production-key-change-this/' \
             -e 's/DEBUG=.*/DEBUG=False/' \
-            -e 's/ALLOWED_HOSTS=.*/ALLOWED_HOSTS=api.fablink.com,fablink.com,.amazonaws.com/' \
+            -e 's/ALLOWED_HOSTS=.*/ALLOWED_HOSTS=api.fablink.com,.amazonaws.com/' \
             -e 's/DB_NAME=.*/DB_NAME=fablink_prod_db/' \
             -e 's/DB_USER=.*/DB_USER=fablink_prod_user/' \
             -e 's/DB_PASSWORD=.*/DB_PASSWORD=super-secure-aurora-password/' \
@@ -139,8 +134,6 @@ create_env_file() {
             -e 's/DB_PORT=.*/DB_PORT=5432/' \
             -e 's/USE_DYNAMODB=.*/USE_DYNAMODB=True/' \
             -e 's/DYNAMODB_REGION=.*/DYNAMODB_REGION=ap-northeast-2/' \
-            -e 's/DYNAMODB_ACCESS_KEY_ID=.*/DYNAMODB_ACCESS_KEY_ID=prod-dynamodb-access-key/' \
-            -e 's/DYNAMODB_SECRET_ACCESS_KEY=.*/DYNAMODB_SECRET_ACCESS_KEY=prod-dynamodb-secret-key/' \
             -e 's/DYNAMODB_TABLE_PREFIX=.*/DYNAMODB_TABLE_PREFIX=fablink_prod/' \
             -e 's/CORS_ALLOWED_ORIGINS=.*/CORS_ALLOWED_ORIGINS=https:\/\/fablink.com/' \
             -e 's/JWT_SECRET_KEY=.*/JWT_SECRET_KEY=super-secure-jwt-key/' \
@@ -148,10 +141,6 @@ create_env_file() {
             -e 's/AWS_STORAGE_BUCKET_NAME=.*/AWS_STORAGE_BUCKET_NAME=fablink-prod-uploads/' \
             -e 's/AWS_S3_REGION_NAME=.*/AWS_S3_REGION_NAME=ap-northeast-2/' \
             -e 's/LOG_LEVEL=.*/LOG_LEVEL=ERROR/' \
-            -e 's/ENABLE_SQL_LOGGING=.*/ENABLE_SQL_LOGGING=False/' \
-            -e 's/ENABLE_DEBUG_TOOLBAR=.*/ENABLE_DEBUG_TOOLBAR=False/' \
-            -e 's/ENABLE_EXPERIMENTAL_FEATURES=.*/ENABLE_EXPERIMENTAL_FEATURES=False/' \
-            -e 's/MOCK_EXTERNAL_APIS=.*/MOCK_EXTERNAL_APIS=False/' \
             -e 's/SECURE_SSL_REDIRECT=.*/SECURE_SSL_REDIRECT=True/' \
             -e 's/SECURE_HSTS_SECONDS=.*/SECURE_HSTS_SECONDS=31536000/' \
             -e 's/SECURE_HSTS_INCLUDE_SUBDOMAINS=.*/SECURE_HSTS_INCLUDE_SUBDOMAINS=True/' \
