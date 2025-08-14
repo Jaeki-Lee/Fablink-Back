@@ -75,15 +75,9 @@ create_env_file() {
             -e 's/DB_PASSWORD=.*/DB_PASSWORD=local123/' \
             -e 's/DB_HOST=.*/DB_HOST=localhost/' \
             -e 's/DB_PORT=.*/DB_PORT=5432/' \
+            -e 's/USE_DYNAMODB=.*/USE_DYNAMODB=False/' \
             -e 's/CORS_ALLOWED_ORIGINS=.*/CORS_ALLOWED_ORIGINS=http:\/\/localhost:3000,http:\/\/127.0.0.1:3000/' \
             -e 's/JWT_SECRET_KEY=.*/JWT_SECRET_KEY=local-jwt-secret-key/' \
-            -e 's/EMAIL_BACKEND=.*/EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend/' \
-            -e 's/EMAIL_HOST=.*/EMAIL_HOST=/' \
-            -e 's/EMAIL_PORT=.*/EMAIL_PORT=/' \
-            -e 's/EMAIL_USE_TLS=.*/EMAIL_USE_TLS=False/' \
-            -e 's/EMAIL_HOST_USER=.*/EMAIL_HOST_USER=/' \
-            -e 's/EMAIL_HOST_PASSWORD=.*/EMAIL_HOST_PASSWORD=/' \
-            -e 's/DEFAULT_FROM_EMAIL=.*/DEFAULT_FROM_EMAIL=noreply@fablink.local/' \
             -e 's/USE_S3=.*/USE_S3=False/' \
             -e 's/AWS_STORAGE_BUCKET_NAME=.*/AWS_STORAGE_BUCKET_NAME=fablink-local-uploads/' \
             -e 's/LOG_LEVEL=.*/LOG_LEVEL=DEBUG/' \
@@ -105,21 +99,22 @@ create_env_file() {
             -e 's/DJANGO_ENV=.*/DJANGO_ENV=dev/' \
             -e 's/SECRET_KEY=.*/SECRET_KEY=dev-secret-key-change-in-production/' \
             -e 's/DEBUG=.*/DEBUG=True/' \
-            -e 's/ALLOWED_HOSTS=.*/ALLOWED_HOSTS=dev-api.fablink.com,localhost/' \
+            -e 's/ALLOWED_HOSTS=.*/ALLOWED_HOSTS=dev-api.fablink.com,localhost,.amazonaws.com/' \
             -e 's/DB_NAME=.*/DB_NAME=fablink_dev_db/' \
             -e 's/DB_USER=.*/DB_USER=fablink_dev_user/' \
-            -e 's/DB_PASSWORD=.*/DB_PASSWORD=dev-db-password/' \
-            -e 's/DB_HOST=.*/DB_HOST=fablink-dev-cluster.cluster-xxxxx.ap-northeast-2.rds.amazonaws.com/' \
+            -e 's/DB_PASSWORD=.*/DB_PASSWORD=dev-aurora-password/' \
+            -e 's/DB_HOST=.*/DB_HOST=fablink-dev-aurora-cluster.cluster-xxxxx.ap-northeast-2.rds.amazonaws.com/' \
             -e 's/DB_PORT=.*/DB_PORT=5432/' \
+            -e 's/USE_DYNAMODB=.*/USE_DYNAMODB=True/' \
+            -e 's/DYNAMODB_REGION=.*/DYNAMODB_REGION=ap-northeast-2/' \
+            -e 's/DYNAMODB_ACCESS_KEY_ID=.*/DYNAMODB_ACCESS_KEY_ID=dev-dynamodb-access-key/' \
+            -e 's/DYNAMODB_SECRET_ACCESS_KEY=.*/DYNAMODB_SECRET_ACCESS_KEY=dev-dynamodb-secret-key/' \
+            -e 's/DYNAMODB_TABLE_PREFIX=.*/DYNAMODB_TABLE_PREFIX=fablink_dev/' \
             -e 's/CORS_ALLOWED_ORIGINS=.*/CORS_ALLOWED_ORIGINS=https:\/\/dev.fablink.com/' \
             -e 's/JWT_SECRET_KEY=.*/JWT_SECRET_KEY=dev-jwt-secret-key/' \
-            -e 's/EMAIL_BACKEND=.*/EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend/' \
-            -e 's/EMAIL_HOST=.*/EMAIL_HOST=smtp.gmail.com/' \
-            -e 's/EMAIL_PORT=.*/EMAIL_PORT=587/' \
-            -e 's/EMAIL_USE_TLS=.*/EMAIL_USE_TLS=True/' \
-            -e 's/DEFAULT_FROM_EMAIL=.*/DEFAULT_FROM_EMAIL=noreply@dev.fablink.com/' \
             -e 's/USE_S3=.*/USE_S3=True/' \
             -e 's/AWS_STORAGE_BUCKET_NAME=.*/AWS_STORAGE_BUCKET_NAME=fablink-dev-uploads/' \
+            -e 's/AWS_S3_REGION_NAME=.*/AWS_S3_REGION_NAME=ap-northeast-2/' \
             -e 's/LOG_LEVEL=.*/LOG_LEVEL=INFO/' \
             -e 's/ENABLE_SQL_LOGGING=.*/ENABLE_SQL_LOGGING=False/' \
             -e 's/ENABLE_DEBUG_TOOLBAR=.*/ENABLE_DEBUG_TOOLBAR=True/' \
@@ -136,21 +131,22 @@ create_env_file() {
             -e 's/DJANGO_ENV=.*/DJANGO_ENV=prod/' \
             -e 's/SECRET_KEY=.*/SECRET_KEY=super-secret-production-key-change-this/' \
             -e 's/DEBUG=.*/DEBUG=False/' \
-            -e 's/ALLOWED_HOSTS=.*/ALLOWED_HOSTS=api.fablink.com,fablink.com/' \
+            -e 's/ALLOWED_HOSTS=.*/ALLOWED_HOSTS=api.fablink.com,fablink.com,.amazonaws.com/' \
             -e 's/DB_NAME=.*/DB_NAME=fablink_prod_db/' \
             -e 's/DB_USER=.*/DB_USER=fablink_prod_user/' \
-            -e 's/DB_PASSWORD=.*/DB_PASSWORD=super-secure-prod-password/' \
-            -e 's/DB_HOST=.*/DB_HOST=fablink-prod-cluster.cluster-xxxxx.ap-northeast-2.rds.amazonaws.com/' \
+            -e 's/DB_PASSWORD=.*/DB_PASSWORD=super-secure-aurora-password/' \
+            -e 's/DB_HOST=.*/DB_HOST=fablink-prod-aurora-cluster.cluster-xxxxx.ap-northeast-2.rds.amazonaws.com/' \
             -e 's/DB_PORT=.*/DB_PORT=5432/' \
+            -e 's/USE_DYNAMODB=.*/USE_DYNAMODB=True/' \
+            -e 's/DYNAMODB_REGION=.*/DYNAMODB_REGION=ap-northeast-2/' \
+            -e 's/DYNAMODB_ACCESS_KEY_ID=.*/DYNAMODB_ACCESS_KEY_ID=prod-dynamodb-access-key/' \
+            -e 's/DYNAMODB_SECRET_ACCESS_KEY=.*/DYNAMODB_SECRET_ACCESS_KEY=prod-dynamodb-secret-key/' \
+            -e 's/DYNAMODB_TABLE_PREFIX=.*/DYNAMODB_TABLE_PREFIX=fablink_prod/' \
             -e 's/CORS_ALLOWED_ORIGINS=.*/CORS_ALLOWED_ORIGINS=https:\/\/fablink.com/' \
             -e 's/JWT_SECRET_KEY=.*/JWT_SECRET_KEY=super-secure-jwt-key/' \
-            -e 's/EMAIL_BACKEND=.*/EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend/' \
-            -e 's/EMAIL_HOST=.*/EMAIL_HOST=smtp.gmail.com/' \
-            -e 's/EMAIL_PORT=.*/EMAIL_PORT=587/' \
-            -e 's/EMAIL_USE_TLS=.*/EMAIL_USE_TLS=True/' \
-            -e 's/DEFAULT_FROM_EMAIL=.*/DEFAULT_FROM_EMAIL=noreply@fablink.com/' \
             -e 's/USE_S3=.*/USE_S3=True/' \
             -e 's/AWS_STORAGE_BUCKET_NAME=.*/AWS_STORAGE_BUCKET_NAME=fablink-prod-uploads/' \
+            -e 's/AWS_S3_REGION_NAME=.*/AWS_S3_REGION_NAME=ap-northeast-2/' \
             -e 's/LOG_LEVEL=.*/LOG_LEVEL=ERROR/' \
             -e 's/ENABLE_SQL_LOGGING=.*/ENABLE_SQL_LOGGING=False/' \
             -e 's/ENABLE_DEBUG_TOOLBAR=.*/ENABLE_DEBUG_TOOLBAR=False/' \
