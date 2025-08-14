@@ -1,0 +1,63 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# 환경변수 설정
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# 시스템 패키지 설치
+RUN apt-get update && apt-get install -y \
+    gcc \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Python 의존성 설치 (기본만)
+RUN pip install --no-cache-dir \
+    Django==4.2.7 \
+    djangorestframework==3.14.0 \
+    django-cors-headers==4.3.1 \
+    python-dotenv==1.0.0
+
+# 애플리케이션 코드 복사
+COPY . .
+
+# 정적 파일 디렉토리 생성
+RUN mkdir -p staticfiles media
+
+# 포트 노출
+EXPOSE 8000
+
+# 헬스체크 추가
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/ || exit 1
+
+# 시작 스크립트 생성
+RUN echo '#!/bin/bash\n\
+echo "🚀 Django 테스트 서버 시작 중..."\n\
+echo "환경변수 확인:"\n\
+echo "DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE"\n\
+echo "DEBUG: $DEBUG"\n\
+echo ""\n\
+echo "마이그레이션 실행 중..."\n\
+python manage.py migrate --noinput\n\
+echo ""\n\
+echo "정적 파일 수집 중..."\n\
+python manage.py collectstatic --noinput\n\
+echo ""\n\
+echo "슈퍼유저 생성..."\n\
+echo "from django.contrib.auth.models import User; User.objects.filter(username='\''admin'\'').exists() or User.objects.create_superuser('\''admin'\'', '\''admin@example.com'\'', '\''admin123'\'')" | python manage.py shell\n\
+echo ""\n\
+echo "✅ Django 서버 시작!"\n\
+echo "🌐 접속 URL: http://localhost:8000"\n\
+echo "👤 관리자: admin / admin123"\n\
+echo ""\n\
+python manage.py runserver 0.0.0.0:8000' > /app/start_test.sh
+
+RUN chmod +x /app/start_test.sh
+
+# 기본 설정으로 시작
+ENV DJANGO_SETTINGS_MODULE=fablink_project.settings.docker_fixed
+ENV DEBUG=True
+
+CMD ["/app/start_test.sh"]

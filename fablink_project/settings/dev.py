@@ -12,26 +12,36 @@ ALLOWED_HOSTS = [
     '.amazonaws.com',  # AWS 환경
 ]
 
-# AWS Aurora PostgreSQL 데이터베이스 설정 (개발 서버용)
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME', 'fablink_dev_db'),
-        'USER': os.getenv('DB_USER', 'fablink_dev_user'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),  # 필수값
-        'HOST': os.getenv('DB_HOST'),  # Aurora 개발 클러스터 엔드포인트
-        'PORT': os.getenv('DB_PORT', '5432'),
-        'OPTIONS': {
-            'sslmode': 'require',  # Aurora는 SSL 필수
-            'client_encoding': 'UTF8',
-            'connect_timeout': 10,
-        },
-        'CONN_MAX_AGE': 300,  # 개발환경은 짧게 설정
-        'TEST': {
-            'NAME': 'test_fablink_dev_db',
+# 데이터베이스 설정 (개발 서버용)
+if os.getenv('USE_SQLITE', 'False').lower() == 'true':
+    # SQLite 사용 (로컬 테스트용)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
-}
+else:
+    # AWS Aurora PostgreSQL 데이터베이스 설정
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('DB_NAME', 'fablink_dev_db'),
+            'USER': os.getenv('DB_USER', 'fablink_dev_user'),
+            'PASSWORD': os.getenv('DB_PASSWORD'),
+            'HOST': os.getenv('DB_HOST'),
+            'PORT': os.getenv('DB_PORT', '5432'),
+            'OPTIONS': {
+                'sslmode': 'require',
+                'client_encoding': 'UTF8',
+                'connect_timeout': 10,
+            },
+            'CONN_MAX_AGE': 300,
+            'TEST': {
+                'NAME': 'test_fablink_dev_db',
+            }
+        }
+    }
 
 # 개발환경용 이메일 백엔드 (실제 SMTP 사용)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -42,9 +52,15 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 
 # 개발환경에서만 사용할 추가 앱
-INSTALLED_APPS += [
-    'django_extensions',  # 개발 도구
+DEV_APPS = [
+    'debug_toolbar',  # 디버그 툴바
 ]
+
+# django_extensions가 이미 있는지 확인 후 추가
+if 'django_extensions' not in INSTALLED_APPS:
+    DEV_APPS.append('django_extensions')
+
+INSTALLED_APPS += DEV_APPS
 
 # 개발환경 전용 설정
 INTERNAL_IPS = [

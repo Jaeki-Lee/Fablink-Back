@@ -1,0 +1,80 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# 환경변수 설정
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# 시스템 패키지 설치
+RUN apt-get update && apt-get install -y \
+    gcc \
+    curl \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+# Python 의존성 설치
+RUN pip install --no-cache-dir \
+    Django==4.2.7 \
+    djangorestframework==3.14.0 \
+    django-cors-headers==4.3.1 \
+    python-dotenv==1.0.0 \
+    psycopg2-binary==2.9.9 \
+    gunicorn==21.2.0
+
+# 애플리케이션 코드 복사
+COPY . .
+
+# 정적 파일 디렉토리 생성
+RUN mkdir -p staticfiles media
+
+# 포트 노출
+EXPOSE 8000
+
+# 헬스체크 추가
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health/ || exit 1
+
+# 시작 스크립트 생성
+RUN echo '#!/bin/bash\n\
+echo "🚀 Fablink Backend K8s 배포 시작..."\n\
+echo "환경변수:"\n\
+echo "  DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE"\n\
+echo "  DEBUG: $DEBUG"\n\
+echo "  DB_HOST: $DB_HOST"\n\
+echo "  DB_NAME: $DB_NAME"\n\
+echo ""\n\
+echo "📊 데이터베이스 연결 테스트..."\n\
+python -c "import psycopg2; conn = psycopg2.connect(host='\''$DB_HOST'\'', database='\''$DB_NAME'\'', user='\''$DB_USER'\'', password='\''$DB_PASSWORD'\''); print('\''✅ Aurora DB 연결 성공!'\''); conn.close()"\n\
+echo ""\n\
+echo "📊 마이그레이션 실행 중..."\n\
+python manage.py migrate --noinput\n\
+echo ""\n\
+echo "📁 정적 파일 수집 중..."\n\
+python manage.py collectstatic --noinput\n\
+echo ""\n\
+echo "👤 슈퍼유저 생성 중..."\n\
+echo "from django.contrib.auth.models import User; User.objects.filter(username='\''admin'\'').exists() or User.objects.create_superuser('\''admin'\'', '\''admin@fablink.com'\'', '\''$ADMIN_PASSWORD'\'')" | python manage.py shell\n\
+echo ""\n\
+echo "✅ K8s 배포 완료!"\n\
+echo "🌐 서비스 엔드포인트에서 접속 가능"\n\
+echo "🔍 헬스체크: /health/"\n\
+echo "🗄️  DB 체크: /db-check/"\n\
+echo "👤 관리자: /admin/"\n\
+echo ""\n\
+if [ "$DJANGO_ENV" = "production" ]; then\n\
+    echo "🚀 Gunicorn으로 프로덕션 서버 시작..."\n\
+    gunicorn --bind 0.0.0.0:8000 --workers 3 --timeout 60 fablink_project.wsgi:application\n\
+else\n\
+    echo "🔧 Django 개발 서버 시작..."\n\
+    python manage.py runserver 0.0.0.0:8000\n\
+fi' > /app/start_k8s.sh
+
+RUN chmod +x /app/start_k8s.sh
+
+# 기본 설정
+ENV DJANGO_SETTINGS_MODULE=fablink_project.settings.k8s
+ENV DEBUG=False
+ENV DJANGO_ENV=production
+
+CMD ["/app/start_k8s.sh"]
