@@ -33,13 +33,23 @@ DATABASES = {
     }
 }
 
-# 개발환경용 이메일 백엔드 (실제 SMTP 사용)
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
-EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
-EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+# DynamoDB 설정 (개발환경)
+USE_DYNAMODB = os.getenv('USE_DYNAMODB', 'True').lower() == 'true'
+if USE_DYNAMODB:
+    DYNAMODB_SETTINGS = {
+        'region_name': os.getenv('DYNAMODB_REGION', 'ap-northeast-2'),
+        'aws_access_key_id': os.getenv('DYNAMODB_ACCESS_KEY_ID'),
+        'aws_secret_access_key': os.getenv('DYNAMODB_SECRET_ACCESS_KEY'),
+        'table_prefix': os.getenv('DYNAMODB_TABLE_PREFIX', 'fablink_dev'),
+    }
+    
+    # DynamoDB 테이블 설정
+    DYNAMODB_TABLES = {
+        'user_sessions': f"{DYNAMODB_SETTINGS['table_prefix']}_user_sessions",
+        'cache_data': f"{DYNAMODB_SETTINGS['table_prefix']}_cache_data",
+        'analytics': f"{DYNAMODB_SETTINGS['table_prefix']}_analytics",
+        'logs': f"{DYNAMODB_SETTINGS['table_prefix']}_logs",
+    }
 
 # 개발환경에서만 사용할 추가 앱
 INSTALLED_APPS += [

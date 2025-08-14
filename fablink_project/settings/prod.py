@@ -1,29 +1,30 @@
-# fablink_project/settings/production.py
+# fablink_project/settings/prod.py
 from .base import *
 import dj_database_url
 
 # 운영환경 보안 설정
 DEBUG = False
 ALLOWED_HOSTS = [
-    'your-production-domain.com',
-    'www.your-production-domain.com',
-    # AWS ELB나 CloudFlare 등의 IP도 추가
+    'api.fablink.com',
+    'fablink.com',
+    '.amazonaws.com',  # AWS ELB, CloudFront 등
 ]
 
-# 운영환경 데이터베이스
+# AWS Aurora PostgreSQL 데이터베이스 설정 (운영환경)
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('PROD_DB_NAME', 'fablink_prod_db'),
-        'USER': os.getenv('PROD_DB_USER', 'fablink_prod_user'),
-        'PASSWORD': os.getenv('PROD_DB_PASSWORD'),  # 필수값
-        'HOST': os.getenv('PROD_DB_HOST', 'your-db-host.amazonaws.com'),
-        'PORT': os.getenv('PROD_DB_PORT', '5432'),
+        'NAME': os.getenv('DB_NAME', 'fablink_prod_db'),
+        'USER': os.getenv('DB_USER', 'fablink_prod_user'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),  # 필수값
+        'HOST': os.getenv('DB_HOST'),  # Aurora 운영 클러스터 엔드포인트
+        'PORT': os.getenv('DB_PORT', '5432'),
         'OPTIONS': {
-            'sslmode': 'require',  # 운영환경에서는 SSL 필수
+            'sslmode': 'require',  # Aurora는 SSL 필수
             'client_encoding': 'UTF8',
+            'connect_timeout': 10,
         },
-        'CONN_MAX_AGE': 600,  # 연결 풀링
+        'CONN_MAX_AGE': 600,  # 운영환경은 길게 설정
         'TEST': {
             'NAME': 'test_fablink_prod_db',
         }
@@ -37,6 +38,24 @@ if 'DATABASE_URL' in os.environ:
         'sslmode': 'require',
     }
 
+# DynamoDB 설정 (운영환경)
+USE_DYNAMODB = os.getenv('USE_DYNAMODB', 'True').lower() == 'true'
+if USE_DYNAMODB:
+    DYNAMODB_SETTINGS = {
+        'region_name': os.getenv('DYNAMODB_REGION', 'ap-northeast-2'),
+        'aws_access_key_id': os.getenv('DYNAMODB_ACCESS_KEY_ID'),
+        'aws_secret_access_key': os.getenv('DYNAMODB_SECRET_ACCESS_KEY'),
+        'table_prefix': os.getenv('DYNAMODB_TABLE_PREFIX', 'fablink_prod'),
+    }
+    
+    # DynamoDB 테이블 설정
+    DYNAMODB_TABLES = {
+        'user_sessions': f"{DYNAMODB_SETTINGS['table_prefix']}_user_sessions",
+        'cache_data': f"{DYNAMODB_SETTINGS['table_prefix']}_cache_data",
+        'analytics': f"{DYNAMODB_SETTINGS['table_prefix']}_analytics",
+        'logs': f"{DYNAMODB_SETTINGS['table_prefix']}_logs",
+    }
+
 # 보안 설정
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
@@ -48,20 +67,12 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 
-# 운영환경용 이메일 설정
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
-EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@fablink.com')
-
-# 정적 파일 설정 (S3 사용 예시)
-if os.getenv('USE_S3', 'False').lower() == 'true':
+# AWS S3 설정 (운영환경)
+USE_S3 = os.getenv('USE_S3', 'True').lower() == 'true'
+if USE_S3:
     AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
     AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
-    AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME')
+    AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME', 'fablink-prod-uploads')
     AWS_S3_REGION_NAME = os.getenv('AWS_S3_REGION_NAME', 'ap-northeast-2')
     AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com'
     
@@ -127,7 +138,7 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'simple',
         },
-    },
+    ],
     'root': {
         'handlers': ['file', 'console'],
         'level': 'INFO',
@@ -143,8 +154,8 @@ LOGGING = {
 
 # CORS 설정 (운영환경)
 CORS_ALLOWED_ORIGINS = [
-    "https://your-frontend-domain.com",
-    "https://www.your-frontend-domain.com",
+    "https://fablink.com",
+    "https://www.fablink.com",
 ]
 CORS_ALLOW_CREDENTIALS = True
 
