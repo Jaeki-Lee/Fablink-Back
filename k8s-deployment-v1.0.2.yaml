@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fablink-backend-v2
+  labels:
+    app: fablink-backend-v2
+    version: v1.0.2
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: fablink-backend-v2
+  template:
+    metadata:
+      labels:
+        app: fablink-backend-v2
+    spec:
+      containers:
+      - name: django
+        image: 853963783084.dkr.ecr.ap-northeast-2.amazonaws.com/fablink-backend:v1.0.2
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: DJANGO_SETTINGS_MODULE
+          value: "fablink_project.settings.k8s_production"
+        - name: DJANGO_ENV
+          value: "production"
+        - name: DEBUG
+          value: "False"
+        - name: DB_HOST
+          value: "fablink-aurora-cluster.cluster-cr2c0e2q6qeb.ap-northeast-2.rds.amazonaws.com"
+        - name: DB_NAME
+          value: "fablink"
+        - name: DB_USER
+          value: "fablinkadmin"
+        - name: DB_PASSWORD
+          value: "fablink123!"
+        - name: DB_PORT
+          value: "5432"
+        - name: ADMIN_PASSWORD
+          value: "admin123!"
+        - name: SECRET_KEY
+          value: "k8s-production-secret-key-v1.0.2"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health/
+            port: 8000
+          initialDelaySeconds: 90  # 더 긴 초기 지연
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health/
+            port: 8000
+          initialDelaySeconds: 60  # 더 긴 초기 지연
+          periodSeconds: 15
+          timeoutSeconds: 5
+          failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fablink-backend-v2-service
+  labels:
+    app: fablink-backend-v2
+spec:
+  selector:
+    app: fablink-backend-v2
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  type: LoadBalancer
