@@ -34,7 +34,29 @@ def ensure_indexes():
     col_designer.create_index([('overall_status', ASCENDING)], name='ix_overall_status')
 
     col_factory = get_collection(settings.MONGODB_COLLECTIONS['factory_orders'])
-    col_factory.create_index([('order_id', ASCENDING)], unique=True, name='ux_order_id')
+    # drop legacy single unique index if exists to allow multiple factories per order
+    try:
+        info = col_factory.index_information()
+        if 'ux_order_id' in info:
+            col_factory.drop_index('ux_order_id')
+    except Exception:
+        pass
+    # composite unique index: (order_id, phase, factory_id)
+    try:
+        col_factory.create_index([
+            ('order_id', ASCENDING),
+            ('phase', ASCENDING),
+            ('factory_id', ASCENDING),
+        ], unique=True, name='ux_order_phase_factory')
+    except Exception:
+        pass
+    # helpful secondary indexes
+    try:
+        col_factory.create_index([('factory_id', ASCENDING)], name='ix_factory_id')
+        col_factory.create_index([('overall_status', ASCENDING)], name='ix_overall_status')
+        col_factory.create_index([('due_date', ASCENDING)], name='ix_due_date')
+    except Exception:
+        pass
 
 
 def now_iso_with_minutes() -> str:

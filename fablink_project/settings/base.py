@@ -116,7 +116,8 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # MongoDB settings (env override)
-MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb://localhost:27017')
+# 기본 포트를 9000으로 설정하여 스크립트/.env.example와 일관성 유지
+MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb://localhost:9000')
 MONGODB_DB = os.getenv('MONGODB_DB', 'fablink')
 MONGODB_COLLECTIONS = {
     'designer_orders': os.getenv('MONGODB_COLLECTION_DESIGNER', 'designer_orders'),
