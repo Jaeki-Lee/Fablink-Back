@@ -181,4 +181,4 @@ class BidFactory(models.Model):
         unique_together = ['factory', 'request_order']  # 공장당 한 번만 입찰 가능
 
     def __str__(self):
-        return f"입찰 {self.id} - {self.factory.company_name} - {self.request_order.product_name}"
+        return f"입찰 {self.id} - {self.factory.name} - {self.request_order.product_name}"
