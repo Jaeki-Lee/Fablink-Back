@@ -7,6 +7,8 @@ DEBUG = True
 # 개발환경용 허용 호스트
 ALLOWED_HOSTS = [
     'dev-api.fablink.com',
+    '8wwdg03sr6.execute-api.ap-northeast-2.amazonaws.com',  # API Gateway
+    'fablink-dev-nlb-25ff572334e995e4.elb.ap-northeast-2.amazonaws.com',  # NLB
     'localhost',
     '127.0.0.1',
     '.amazonaws.com',  # AWS 환경
@@ -38,18 +40,11 @@ USE_DYNAMODB = os.getenv('USE_DYNAMODB', 'True').lower() == 'true'
 if USE_DYNAMODB:
     DYNAMODB_SETTINGS = {
         'region_name': os.getenv('DYNAMODB_REGION', 'ap-northeast-2'),
-        'aws_access_key_id': os.getenv('DYNAMODB_ACCESS_KEY_ID'),
-        'aws_secret_access_key': os.getenv('DYNAMODB_SECRET_ACCESS_KEY'),
-        'table_prefix': os.getenv('DYNAMODB_TABLE_PREFIX', 'fablink_dev'),
+        'table_name': os.getenv('DYNAMODB_TABLE_PREFIX', 'fablink-dynamodb-dev'),  # 실제 테이블명 사용
     }
     
-    # DynamoDB 테이블 설정
-    DYNAMODB_TABLES = {
-        'user_sessions': f"{DYNAMODB_SETTINGS['table_prefix']}_user_sessions",
-        'cache_data': f"{DYNAMODB_SETTINGS['table_prefix']}_cache_data",
-        'analytics': f"{DYNAMODB_SETTINGS['table_prefix']}_analytics",
-        'logs': f"{DYNAMODB_SETTINGS['table_prefix']}_logs",
-    }
+    # DynamoDB 테이블 설정 (단일 테이블 사용)
+    DYNAMODB_TABLE_NAME = DYNAMODB_SETTINGS['table_name']
 
 # 개발환경에서만 사용할 추가 앱
 INSTALLED_APPS += [
@@ -64,8 +59,8 @@ INTERNAL_IPS = [
 
 # 개발환경용 CORS 설정
 CORS_ALLOWED_ORIGINS = [
-    "https://dev.fablink.com",
-    "http://localhost:3000",  # 로컬 프론트엔드 테스트용
+    "https://fab-link-dev.org",  # 실제 프론트엔드 도메인
+    "http://localhost:3000",     # 로컬 프론트엔드 테스트용
 ]
 
 # AWS S3 사용 (개발환경)

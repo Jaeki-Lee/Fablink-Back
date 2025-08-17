@@ -3,48 +3,23 @@ kind: ConfigMap
 metadata:
   name: fablink-config
 data:
-  # Django 기본 설정
-  DJANGO_SETTINGS_MODULE: "config.settings.production"
+  # Django 기본 설정 (환경별 patch에서 오버라이드됨)
+  DJANGO_SETTINGS_MODULE: "fablink_project.settings.base"
   DEBUG: "False"
   
   # 데이터베이스 공통 설정
   DB_ENGINE: "django.db.backends.postgresql"
   DB_PORT: "5432"
-  DB_CONN_MAX_AGE: "600"
-  DB_CONN_HEALTH_CHECKS: "True"
   
   # DynamoDB 공통 설정
   DYNAMODB_REGION: "ap-northeast-2"
-  DYNAMODB_ENDPOINT: "https://dynamodb.ap-northeast-2.amazonaws.com"
+  USE_DYNAMODB: "True"
   
   # AWS 공통 설정
-  AWS_DEFAULT_REGION: "ap-northeast-2"
   AWS_S3_REGION_NAME: "ap-northeast-2"
+  USE_S3: "True"
   
-  # 세션 설정
-  SESSION_ENGINE: "django.contrib.sessions.backends.db"
-  SESSION_COOKIE_AGE: "1209600"  # 2주
-  
-  # 캐시 설정
-  CACHE_BACKEND: "django.core.cache.backends.db.DatabaseCache"
-  CACHE_LOCATION: "cache_table"
-  
-  # 로깅 설정
-  LOG_FORMAT: "json"
-  
-  # 정적 파일 설정
-  STATIC_URL: "/static/"
-  MEDIA_URL: "/media/"
-  
-  # 기타 설정
+  # 기타 공통 설정
   TIME_ZONE: "Asia/Seoul"
   LANGUAGE_CODE: "ko-kr"
   USE_TZ: "True"
-  
-  # 환경별로 다른 설정들은 patch에서 오버라이드
-  # - ALLOWED_HOSTS
-  # - CORS_ALLOWED_ORIGINS
-  # - DB_HOST, DB_NAME
-  # - DYNAMODB_TABLE_NAME
-  # - LOG_LEVEL
-  # - ENVIRONMENT

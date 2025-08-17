@@ -100,16 +100,16 @@ create_env_file() {
             -e 's/DJANGO_ENV=.*/DJANGO_ENV=dev/' \
             -e 's/SECRET_KEY=.*/SECRET_KEY=dev-secret-key-change-in-production/' \
             -e 's/DEBUG=.*/DEBUG=True/' \
-            -e 's/ALLOWED_HOSTS=.*/ALLOWED_HOSTS=dev-api.fablink.com,.amazonaws.com/' \
-            -e 's/DB_NAME=.*/DB_NAME=fablink_dev_db/' \
-            -e 's/DB_USER=.*/DB_USER=fablink_dev_user/' \
-            -e 's/DB_PASSWORD=.*/DB_PASSWORD=dev-aurora-password/' \
-            -e 's/DB_HOST=.*/DB_HOST=fablink-dev-aurora-cluster.cluster-xxxxx.ap-northeast-2.rds.amazonaws.com/' \
+            -e 's/ALLOWED_HOSTS=.*/ALLOWED_HOSTS=dev-api.fablink.com,8wwdg03sr6.execute-api.ap-northeast-2.amazonaws.com,fablink-dev-nlb-25ff572334e995e4.elb.ap-northeast-2.amazonaws.com/' \
+            -e 's/DB_NAME=.*/DB_NAME=fablink/' \
+            -e 's/DB_USER=.*/DB_USER=fablinkadmin/' \
+            -e 's/DB_PASSWORD=.*/DB_PASSWORD=CHANGE_THIS_PASSWORD/' \
+            -e 's/DB_HOST=.*/DB_HOST=fablink-aurora-cluster.cluster-cr2c0e2q6qeb.ap-northeast-2.rds.amazonaws.com/' \
             -e 's/DB_PORT=.*/DB_PORT=5432/' \
             -e 's/USE_DYNAMODB=.*/USE_DYNAMODB=True/' \
             -e 's/DYNAMODB_REGION=.*/DYNAMODB_REGION=ap-northeast-2/' \
-            -e 's/DYNAMODB_TABLE_PREFIX=.*/DYNAMODB_TABLE_PREFIX=fablink_dev/' \
-            -e 's/CORS_ALLOWED_ORIGINS=.*/CORS_ALLOWED_ORIGINS=https:\/\/dev.fablink.com/' \
+            -e 's/DYNAMODB_TABLE_PREFIX=.*/DYNAMODB_TABLE_PREFIX=fablink-dynamodb-dev/' \
+            -e 's/CORS_ALLOWED_ORIGINS=.*/CORS_ALLOWED_ORIGINS=https:\/\/fab-link-dev.org/' \
             -e 's/JWT_SECRET_KEY=.*/JWT_SECRET_KEY=dev-jwt-secret-key/' \
             -e 's/USE_S3=.*/USE_S3=True/' \
             -e 's/AWS_STORAGE_BUCKET_NAME=.*/AWS_STORAGE_BUCKET_NAME=fablink-dev-uploads/' \
