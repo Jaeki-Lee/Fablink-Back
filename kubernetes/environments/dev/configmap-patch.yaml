@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: fablink-config
+  name: fablink-config-dev
 data:
   # Django 설정 (개발 환경)
   DJANGO_SETTINGS_MODULE: "fablink_project.settings.dev"

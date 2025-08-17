@@ -1,13 +1,13 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: fablink-backend
+  name: fablink-backend-dev
 spec:
   replicas: 1
   template:
     spec:
       containers:
-      - name: fablink-backend
+      - name: fablink-backend-dev
         resources:
           requests:
             memory: "256Mi"

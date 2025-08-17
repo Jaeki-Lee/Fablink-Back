@@ -7,9 +7,11 @@ resources:
 
 namespace: fablink-dev
 
+# Base의 fablink-backend:latest를 ECR dev 이미지로 변환
 images:
   - name: fablink-backend
-    newTag: dev-latest
+    newName: 853963783084.dkr.ecr.ap-northeast-2.amazonaws.com/fablink-backend-dev
+    newTag: latest
 
 patchesStrategicMerge:
   - configmap-patch.yaml
