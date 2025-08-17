@@ -9,6 +9,11 @@ def api_root(request):
     return JsonResponse({
         'message': 'FabLink API Server',
         'version': '1.0.0',
+        'health_endpoints': {
+            'health': '/health/',
+            'ready': '/ready/',
+            'startup': '/startup/',
+        },
         'endpoints': {
             'admin': '/admin/',
             'accounts': '/api/accounts/',
@@ -27,6 +32,10 @@ def api_root(request):
 urlpatterns = [
     path('', api_root, name='api-root'),
     path('admin/', admin.site.urls),
+    
+    # Health check endpoints (루트 레벨)
+    path('', include('apps.core.urls')),
+    
     # API 엔드포인트들
     path('api/accounts/', include('apps.accounts.urls')),
     path('api/manufacturing/', include('apps.manufacturing.urls')),
