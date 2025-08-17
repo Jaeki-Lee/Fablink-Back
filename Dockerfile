@@ -3,11 +3,12 @@ FROM python:3.11-slim
 # 빌드 인자로 환경 지정 (기본값: prod)
 ARG ENV=prod
 
-# 환경변수 설정
+# 환경변수 설정 (빌드 시 고정)
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    DJANGO_ENV=${ENV}
 
 WORKDIR /app
 
@@ -40,5 +41,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
 EXPOSE 8000
 
 # 애플리케이션 실행
-# DJANGO_SETTINGS_MODULE은 Kubernetes ConfigMap에서 주입됨
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "--timeout", "120", "fablink_project.wsgi:application"]

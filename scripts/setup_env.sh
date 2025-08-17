@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# 환경별 환경변수 파일 생성 스크립트
-# 사용법: ./scripts/setup_env.sh [local|dev|prod]
+# 로컬 환경 전용 환경변수 파일 생성 스크립트
+# 사용법: ./scripts/setup_env.sh
 
 set -e
 
@@ -31,28 +31,26 @@ print_error() {
 
 # 도움말 출력
 show_help() {
-    echo "환경별 환경변수 파일 생성 스크립트"
+    echo "로컬 개발 환경 설정 스크립트"
     echo ""
     echo "사용법:"
-    echo "  ./scripts/setup_env.sh [환경타입]"
+    echo "  ./scripts/setup_env.sh"
     echo ""
-    echo "환경타입:"
-    echo "  local   - 로컬 개발 환경 (.env.local)"
-    echo "  dev     - 개발 서버 환경 (.env.dev)"
-    echo "  prod    - 운영 서버 환경 (.env.prod)"
+    echo "기능:"
+    echo "  - .env.local 파일 생성"
+    echo "  - 로컬 PostgreSQL 설정"
+    echo "  - 개발 편의성 제공"
     echo ""
-    echo "예시:"
-    echo "  ./scripts/setup_env.sh local"
-    echo "  ./scripts/setup_env.sh dev"
-    echo "  ./scripts/setup_env.sh prod"
+    echo "참고:"
+    echo "  - Dev/Prod 환경은 Kubernetes ConfigMap/Secret 사용"
+    echo "  - .env 파일은 로컬 환경에서만 필요"
 }
 
-# 환경변수 파일 생성 함수
-create_env_file() {
-    local env_type=$1
-    local env_file=".env.${env_type}"
+# 로컬 환경변수 파일 생성
+create_local_env_file() {
+    local env_file=".env.local"
     
-    print_info "환경변수 파일 생성 중: ${env_file}"
+    print_info "로컬 환경변수 파일 생성 중: ${env_file}"
     
     # .env.example 파일이 존재하는지 확인
     if [ ! -f ".env.example" ]; then
@@ -60,7 +58,7 @@ create_env_file() {
         exit 1
     fi
     
-    # .env.example 파일 내용 읽기
+    # .env.example을 기반으로 로컬 설정 생성
     envContent=$(cat .env.example)
     
     # 환경별 설정 적용
@@ -168,40 +166,27 @@ create_env_file() {
 
 # 메인 실행 부분
 main() {
-    # 인자 확인
-    if [ $# -eq 0 ]; then
-        print_error "환경 타입을 지정해주세요."
-        show_help
-        exit 1
-    fi
-    
-    env_type=$1
-    
     # 도움말 요청 확인
-    if [ "$env_type" = "-h" ] || [ "$env_type" = "--help" ]; then
+    if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
         show_help
         exit 0
-    fi
-    
-    # 유효한 환경 타입인지 확인
-    if [ "$env_type" != "local" ] && [ "$env_type" != "dev" ] && [ "$env_type" != "prod" ]; then
-        print_error "유효하지 않은 환경 타입입니다: $env_type"
-        print_info "사용 가능한 환경 타입: local, dev, prod"
-        exit 1
     fi
     
     # 프로젝트 루트 디렉토리로 이동
     cd "$(dirname "$0")/.."
     
-    print_info "FabLink Backend 환경변수 설정을 시작합니다..."
-    print_info "환경 타입: $env_type"
+    print_info "FabLink Backend 로컬 환경 설정을 시작합니다..."
     
-    # 환경변수 파일 생성
-    create_env_file "$env_type"
+    # 로컬 환경변수 파일 생성
+    create_local_env_file
     
-    print_success "환경변수 설정이 완료되었습니다!"
-    print_info "생성된 파일: .env.${env_type}"
+    print_success "로컬 환경 설정이 완료되었습니다!"
+    print_info "생성된 파일: .env.local"
     print_warning "⚠️  실제 운영에서는 보안을 위해 환경변수 값들을 변경해주세요."
+    print_info ""
+    print_info "다음 단계:"
+    print_info "1. PostgreSQL 설치: ./scripts/setup_postgresql_local.sh"
+    print_info "2. 첫 빌드 실행: ./scripts/first_build.sh local"
 }
 
 # 스크립트 실행

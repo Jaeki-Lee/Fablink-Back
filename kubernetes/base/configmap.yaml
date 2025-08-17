@@ -4,7 +4,7 @@ metadata:
   name: fablink-config
 data:
   # Django 기본 설정 (환경별 patch에서 오버라이드됨)
-  DJANGO_SETTINGS_MODULE: "fablink_project.settings.base"
+  # DJANGO_SETTINGS_MODULE은 env_loader.py에서 자동 처리
   DEBUG: "False"
   
   # 데이터베이스 공통 설정
