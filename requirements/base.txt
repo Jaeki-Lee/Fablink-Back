@@ -12,6 +12,9 @@ djangorestframework-camel-case==1.4.2
 django-filter==23.4
 pymongo==4.6.3
 
+# API 문서화
+drf-spectacular==0.27.0
+
 # CORS
 django-cors-headers==4.3.1
 

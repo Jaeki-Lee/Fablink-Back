@@ -37,6 +37,7 @@ THIRD_PARTY_APPS = [
     'rest_framework_simplejwt.token_blacklist',  # JWT 블랙리스트
     'corsheaders',
     'rest_framework.authtoken',
+    'drf_spectacular',  # API 문서화
 ]
 
 LOCAL_APPS = [
@@ -144,6 +145,9 @@ CORS_ALLOW_CREDENTIALS = True
 
 # Django REST Framework 설정
 REST_FRAMEWORK = {
+    # API 문서화
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    
     # 카멜케이스 컨버터
     'DEFAULT_RENDERER_CLASSES': [
         'djangorestframework_camel_case.render.CamelCaseJSONRenderer',
@@ -171,6 +175,31 @@ REST_FRAMEWORK = {
     ],
     'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler',
     'TEST_REQUEST_DEFAULT_FORMAT': 'json',
+}
+
+# drf-spectacular 설정 (API 문서화)
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'FabLink API',
+    'DESCRIPTION': 'AI 기반 맞춤형 의류 제작 플랫폼 FabLink의 REST API',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SCHEMA_PATH_PREFIX': '/api/',
+    'SERVERS': [
+        {
+            'url': 'https://8wwdg03sr6.execute-api.ap-northeast-2.amazonaws.com',
+            'description': 'Development Server (API Gateway)'
+        },
+        {
+            'url': 'http://localhost:8000',
+            'description': 'Local Development Server'
+        }
+    ],
+    'TAGS': [
+        {'name': 'accounts', 'description': '사용자 계정 관리'},
+        {'name': 'manufacturing', 'description': '제조 관리'},
+        {'name': 'health', 'description': '헬스체크'},
+    ],
 }
 
 # CORS 설정 (프론트엔드와 연결용)

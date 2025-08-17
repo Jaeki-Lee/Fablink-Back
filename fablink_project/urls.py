@@ -3,12 +3,18 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.http import JsonResponse
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 def api_root(request):
     """API 루트 엔드포인트"""
     return JsonResponse({
         'message': 'FabLink API Server',
         'version': '1.0.0',
+        'documentation': {
+            'swagger': '/api/docs/',
+            'redoc': '/api/redoc/',
+            'schema': '/api/schema/',
+        },
         'health_endpoints': {
             'health': '/health/',
             'ready': '/ready/',
@@ -32,6 +38,11 @@ def api_root(request):
 urlpatterns = [
     path('', api_root, name='api-root'),
     path('admin/', admin.site.urls),
+    
+    # API 문서화 엔드포인트
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
     
     # Health check endpoints (루트 레벨)
     path('', include('apps.core.urls')),
