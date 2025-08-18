@@ -94,7 +94,11 @@ create_env_file() {
             -e 's/SENTRY_ENVIRONMENT=.*/SENTRY_ENVIRONMENT=local/' \
             -e 's/OPENAI_API_KEY=.*/OPENAI_API_KEY=test-openai-key/' \
             -e 's/PAYMENT_GATEWAY_API_KEY=.*/PAYMENT_GATEWAY_API_KEY=test-payment-key/' \
-            -e 's/PAYMENT_GATEWAY_SECRET=.*/PAYMENT_GATEWAY_SECRET=test-payment-secret/')
+            -e 's/PAYMENT_GATEWAY_SECRET=.*/PAYMENT_GATEWAY_SECRET=test-payment-secret/' \
+            -e 's|MONGODB_URI=.*|MONGODB_URI=mongodb://localhost:9000|' \
+            -e 's/MONGODB_DB=.*/MONGODB_DB=fablink/' \
+            -e 's/MONGODB_COLLECTION_DESIGNER=.*/MONGODB_COLLECTION_DESIGNER=designer_orders/' \
+            -e 's/MONGODB_COLLECTION_FACTORY=.*/MONGODB_COLLECTION_FACTORY=factory_orders/' )
             
     elif [ "$env_type" = "dev" ]; then
         envContent=$(echo "$envContent" | sed \
@@ -121,7 +125,11 @@ create_env_file() {
             -e 's/ENABLE_DEBUG_TOOLBAR=.*/ENABLE_DEBUG_TOOLBAR=True/' \
             -e 's/ENABLE_EXPERIMENTAL_FEATURES=.*/ENABLE_EXPERIMENTAL_FEATURES=True/' \
             -e 's/MOCK_EXTERNAL_APIS=.*/MOCK_EXTERNAL_APIS=False/' \
-            -e 's/SENTRY_ENVIRONMENT=.*/SENTRY_ENVIRONMENT=development/')
+            -e 's/SENTRY_ENVIRONMENT=.*/SENTRY_ENVIRONMENT=development/' \
+            -e 's|MONGODB_URI=.*|MONGODB_URI=mongodb://localhost:9000|' \
+            -e 's/MONGODB_DB=.*/MONGODB_DB=fablink/' \
+            -e 's/MONGODB_COLLECTION_DESIGNER=.*/MONGODB_COLLECTION_DESIGNER=designer_orders/' \
+            -e 's/MONGODB_COLLECTION_FACTORY=.*/MONGODB_COLLECTION_FACTORY=factory_orders/' )
             
     elif [ "$env_type" = "prod" ]; then
         envContent=$(echo "$envContent" | sed \
@@ -154,12 +162,17 @@ create_env_file() {
             -e 's/SECURE_HSTS_PRELOAD=.*/SECURE_HSTS_PRELOAD=True/' \
             -e 's/SESSION_COOKIE_SECURE=.*/SESSION_COOKIE_SECURE=True/' \
             -e 's/CSRF_COOKIE_SECURE=.*/CSRF_COOKIE_SECURE=True/' \
-            -e 's/SENTRY_ENVIRONMENT=.*/SENTRY_ENVIRONMENT=production/')
+            -e 's/SENTRY_ENVIRONMENT=.*/SENTRY_ENVIRONMENT=production/' \
+            -e 's|MONGODB_URI=.*|MONGODB_URI=mongodb://localhost:9000|' \
+            -e 's/MONGODB_DB=.*/MONGODB_DB=fablink/' \
+            -e 's/MONGODB_COLLECTION_DESIGNER=.*/MONGODB_COLLECTION_DESIGNER=designer_orders/' \
+            -e 's/MONGODB_COLLECTION_FACTORY=.*/MONGODB_COLLECTION_FACTORY=factory_orders/' )
     fi
     
     # 파일 생성
     echo "$envContent" > "$env_file"
-    
+
+
     print_success "${env_file} 파일이 생성되었습니다."
     
     # 파일 권한 설정 (보안을 위해 소유자만 읽기/쓰기 가능)
