@@ -59,10 +59,10 @@ class BidFactoryAdmin(admin.ModelAdmin):
     list_display = ('id', 'get_factory_name', 'get_request_order_info', 'work_price', 
                    'expect_work_day', 'settlement_status', 'is_matched', 'matched_date')
     list_filter = ('settlement_status', 'is_matched', 'expect_work_day')
-    search_fields = ('factory__company_name', 'request_order__product_name', 'request_order__designer_name')
+    search_fields = ('factory__name', 'request_order__product_name', 'request_order__designer_name')
     
     def get_factory_name(self, obj):
-        return obj.factory.company_name
+        return obj.factory.name
     get_factory_name.short_description = '공장명'
     
     def get_request_order_info(self, obj):

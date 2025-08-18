@@ -4,8 +4,12 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
 from django.db import transaction
-from .models import Product, Order, RequestOrder
-from .serializers import ProductSerializer, ProductCreateSerializer, OrderSerializer, OrderCreateSerializer
+from django.utils import timezone
+from .models import Product, Order, RequestOrder, BidFactory
+from .serializers import (
+    ProductSerializer, ProductCreateSerializer, OrderSerializer, OrderCreateSerializer,
+    RequestOrderSerializer, BidFactorySerializer, BidFactoryCreateSerializer
+)
 
 logger = logging.getLogger(__name__)
 
@@ -166,4 +170,282 @@ def submit_manufacturing(request):
 
     except Exception as e:
         logger.exception('submit_manufacturing error')
+        return Response({'detail': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_factory_orders(request):
+    """
+    공장주용 주문 목록 조회 - RequestOrder와 BidFactory 정보 포함
+    """
+    try:
+        # 공장주 권한 확인
+        if not hasattr(request.user, 'factory'):
+            return Response({'detail': '공장주만 접근할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
+        
+        # 모든 RequestOrder 조회 (pending 상태)
+        request_orders = RequestOrder.objects.filter(status='pending').select_related(
+            'order__product__designer'
+        ).prefetch_related('bids__factory')
+        
+        orders_data = []
+        for req_order in request_orders:
+            # 해당 공장의 입찰 정보 확인
+            factory_bid = req_order.bids.filter(factory=request.user.factory).first()
+            
+            # 디자이너 정보 가져오기
+            designer = req_order.order.product.designer
+            
+            order_data = {
+                'id': req_order.id,
+                'orderId': req_order.order.order_id,
+                'status': 'pending' if not factory_bid else 'responded',
+                'createdAt': req_order.order.product.created_at,
+                'quantity': req_order.quantity,
+                'customerName': req_order.designer_name,
+                'customerContact': designer.contact if designer.contact else '연락처 정보 없음',
+                'shippingAddress': designer.address if designer.address else '주소 정보 없음',
+
+                'notes': req_order.order.product.memo or '',
+                'productInfo': {
+                    'id': req_order.order.product.id,
+                    'name': req_order.product_name,
+                    'designerName': req_order.designer_name,
+                    'season': req_order.order.product.season,
+                    'target': req_order.order.product.target,
+                    'concept': req_order.order.product.concept,
+                    'detail': req_order.order.product.detail,
+                    'size': req_order.order.product.size,
+                    'fabric': req_order.order.product.fabric,
+                    'material': req_order.order.product.material,
+                    'dueDate': req_order.due_date,
+                    'memo': req_order.order.product.memo,
+                    'imageUrl': request.build_absolute_uri(req_order.order.product.image_path.url) if req_order.order.product.image_path else None,
+                    'workSheetUrl': request.build_absolute_uri(req_order.work_sheet_path.url) if req_order.work_sheet_path else None,
+                }
+            }
+            
+            # 입찰 정보가 있으면 단가 정보 추가, 없으면 기본값 설정
+            if factory_bid:
+                order_data.update({
+                    'unitPrice': factory_bid.work_price,
+                    'totalPrice': factory_bid.work_price * req_order.quantity,
+                    'bidId': factory_bid.id,
+                    'estimatedDeliveryDays': (factory_bid.expect_work_day - req_order.due_date).days if factory_bid.expect_work_day and req_order.due_date else 0,
+                })
+            else:
+                # 입찰 정보가 없을 때 기본값 설정
+                order_data.update({
+                    'unitPrice': 0,
+                    'totalPrice': 0,
+                })
+            
+            orders_data.append(order_data)
+        
+        return Response({'results': orders_data}, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.exception('get_factory_orders error')
+        return Response({'detail': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_designer_orders(request):
+    """
+    디자이너용 주문 목록 조회
+    """
+    try:
+        # 디자이너 권한 확인
+        if not hasattr(request.user, 'designer'):
+            return Response({'detail': '디자이너만 접근할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
+        
+        # 해당 디자이너의 주문들 조회
+        orders = Order.objects.filter(
+            product__designer=request.user.designer
+        ).select_related('product').prefetch_related('request_orders')
+        
+        orders_data = []
+        for order in orders:
+            # RequestOrder 정보 가져오기
+            request_order = order.request_orders.first()
+            
+            order_data = {
+                'id': order.order_id,
+                'order_id': order.order_id,
+                'status': 'pending',  # 기본값
+                'created_at': order.product.created_at,
+                'quantity': request_order.quantity if request_order else order.product.quantity,
+                'product': {
+                    'id': order.product.id,
+                    'name': order.product.name,
+                    'designer': order.product.designer.id,
+                },
+                'productInfo': {
+                    'id': order.product.id,
+                    'name': order.product.name,
+                    'designer': order.product.designer.id,
+                    'designerName': order.product.designer.name,
+                }
+            }
+            
+            orders_data.append(order_data)
+        
+        return Response({'results': orders_data}, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.exception('get_designer_orders error')
+        return Response({'detail': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_bids_by_order(request):
+    """
+    특정 주문에 대한 입찰 목록 조회 (공장 정보 포함)
+    """
+    try:
+        order_id = request.GET.get('order_id')
+        logger.info(f"get_bids_by_order called with order_id: {order_id}")
+        
+        if not order_id:
+            return Response({'detail': 'order_id 파라미터가 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # RequestOrder 찾기
+        try:
+            request_order = RequestOrder.objects.get(order__order_id=order_id)
+            logger.info(f"Found request_order: {request_order.id}")
+        except RequestOrder.DoesNotExist:
+            logger.warning(f"RequestOrder not found for order_id: {order_id}")
+            return Response({'detail': '해당 주문을 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # 해당 RequestOrder에 대한 입찰들 조회
+        bids = BidFactory.objects.filter(
+            request_order=request_order
+        ).select_related('factory', 'request_order')
+        
+        logger.info(f"Found {bids.count()} bids for request_order {request_order.id}")
+        
+        bids_data = []
+        for bid in bids:
+            # 예상 납기일 계산
+            estimated_days = 0
+            if bid.expect_work_day and request_order.due_date:
+                try:
+                    estimated_days = (bid.expect_work_day - request_order.due_date).days
+                except:
+                    estimated_days = 0
+            
+            bid_data = {
+                'id': bid.id,
+                'factory_info': {
+                    'id': bid.factory.id,
+                    'name': bid.factory.name,
+                    'contact': bid.factory.contact,
+                    'address': bid.factory.address,
+                    'profile_image': request.build_absolute_uri(bid.factory.profile_image.url) if bid.factory.profile_image else None,
+                },
+                'unit_price': bid.work_price,
+                'total_price': bid.work_price * request_order.quantity,
+                'estimated_delivery_days': abs(estimated_days),
+                'expect_work_day': bid.expect_work_day.strftime('%Y-%m-%d') if bid.expect_work_day else None,
+                'status': 'selected' if bid.is_matched else 'pending',
+                'settlement_status': bid.settlement_status,
+                'created_at': bid.request_order.order.product.created_at,
+            }
+            bids_data.append(bid_data)
+        
+        logger.info(f"Returning bids_data: {bids_data}")
+        return Response(bids_data, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.exception('get_bids_by_order error')
+        return Response({'detail': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_factory_bid(request):
+    """
+    공장 입찰 생성
+    """
+    try:
+        # 공장주 권한 확인
+        if not hasattr(request.user, 'factory'):
+            return Response({'detail': '공장주만 입찰할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
+        
+        data = request.data.copy()
+        data['factory'] = request.user.factory.id
+        
+        # RequestOrder ID를 통해 RequestOrder 객체 가져오기
+        request_order_id = data.get('order')  # 프론트에서 order로 전송
+        if not request_order_id:
+            return Response({'detail': 'order 필드가 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            request_order = RequestOrder.objects.get(id=request_order_id)
+            data['request_order'] = request_order.id
+        except RequestOrder.DoesNotExist:
+            return Response({'detail': '해당 주문을 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # 예상 납기일 계산 (단가와 예상 작업일수로부터)
+        estimated_delivery_days = data.get('estimated_delivery_days', 7)
+        from datetime import datetime, timedelta
+        data['expect_work_day'] = (datetime.now().date() + timedelta(days=estimated_delivery_days))
+        data['work_price'] = data.get('unit_price')
+        
+        serializer = BidFactoryCreateSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+    except Exception as e:
+        logger.exception('create_factory_bid error')
+        return Response({'detail': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def select_bid(request, bid_id):
+    """
+    입찰 선정
+    """
+    try:
+        logger.info(f"select_bid called with bid_id: {bid_id}")
+        
+        # 디자이너 권한 확인
+        if not hasattr(request.user, 'designer'):
+            return Response({'detail': '디자이너만 입찰을 선정할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
+        
+        try:
+            bid = BidFactory.objects.get(id=bid_id)
+            logger.info(f"Found bid: {bid.id} for factory: {bid.factory.name}")
+        except BidFactory.DoesNotExist:
+            return Response({'detail': '해당 입찰을 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # 해당 디자이너의 주문인지 확인
+        if bid.request_order.order.product.designer != request.user.designer:
+            return Response({'detail': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+        
+        # 입찰 선정
+        bid.is_matched = True
+        bid.matched_date = timezone.now().date()
+        bid.settlement_status = 'confirmed'
+        bid.save()
+        
+        # 같은 RequestOrder의 다른 입찰들은 거절 처리
+        BidFactory.objects.filter(
+            request_order=bid.request_order
+        ).exclude(id=bid_id).update(
+            settlement_status='cancelled'
+        )
+        
+        logger.info(f"Bid {bid_id} selected successfully")
+        return Response({'detail': '입찰이 선정되었습니다.'}, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.exception('select_bid error')
         return Response({'detail': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

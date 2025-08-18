@@ -100,6 +100,12 @@ class Order(models.Model):
 
 class RequestOrder(models.Model):
     """주문 요청 모델"""
+    STATUS_CHOICES = (
+        ('pending', '매칭 대기중'),
+        ('matched', '매칭 완료'),
+        ('cancelled', '취소됨'),
+    )
+    
     order = models.ForeignKey(
         Order,
         on_delete=models.CASCADE,
@@ -116,6 +122,12 @@ class RequestOrder(models.Model):
     work_sheet_path = models.FileField(
         upload_to='request_orders/worksheets/',
         verbose_name="작업지시서"
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending',
+        verbose_name="매칭 상태"
     )
 
     class Meta:
@@ -169,4 +181,4 @@ class BidFactory(models.Model):
         unique_together = ['factory', 'request_order']  # 공장당 한 번만 입찰 가능
 
     def __str__(self):
-        return f"입찰 {self.id} - {self.factory.company_name} - {self.request_order.product_name}"
+        return f"입찰 {self.id} - {self.factory.name} - {self.request_order.product_name}"
